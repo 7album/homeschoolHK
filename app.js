@@ -992,34 +992,61 @@
       renderCards();
     });
 
-    function onChildFieldInput(ev) {
-      var nameId = ev.target.getAttribute("data-child-name");
-      var ageId = ev.target.getAttribute("data-child-age");
-      var child = childById(nameId || ageId);
-      if (!child) return;
-      if (nameId) {
-        child.name = ev.target.value.trim().slice(0, 40) || "小朋友";
-        ev.target.value = child.name;
-      }
-      if (ageId) {
-        var raw = ev.target.value.trim();
-        if (!raw) {
-          child.age = "";
-        } else {
-          var n = parseInt(raw, 10);
-          if (!isNaN(n) && n >= 0 && n <= 99) {
-            child.age = n;
-            if (String(n) !== raw) ev.target.value = String(n);
-          }
-        }
-      }
+    function persistChildEdits() {
       save();
       refreshChildSelects();
       renderLogs();
       renderSummary();
     }
-    $("child-list").addEventListener("input", onChildFieldInput);
-    $("child-list").addEventListener("change", onChildFieldInput);
+
+    function onChildNameInput(ev) {
+      var nameId = ev.target.getAttribute("data-child-name");
+      if (!nameId) return;
+      var child = childById(nameId);
+      if (!child) return;
+      child.name = ev.target.value.slice(0, 40);
+      persistChildEdits();
+    }
+
+    function commitChildNameField(input) {
+      var nameId = input.getAttribute("data-child-name");
+      if (!nameId) return;
+      var child = childById(nameId);
+      if (!child) return;
+      var normalized = input.value.trim().slice(0, 40) || "小朋友";
+      child.name = normalized;
+      input.value = normalized;
+      persistChildEdits();
+    }
+
+    function onChildAgeChange(ev) {
+      var ageId = ev.target.getAttribute("data-child-age");
+      if (!ageId) return;
+      var child = childById(ageId);
+      if (!child) return;
+      var raw = ev.target.value.trim();
+      if (!raw) {
+        child.age = "";
+      } else {
+        var n = parseInt(raw, 10);
+        if (!isNaN(n) && n >= 0 && n <= 99) {
+          child.age = n;
+          if (String(n) !== raw) ev.target.value = String(n);
+        }
+      }
+      persistChildEdits();
+    }
+
+    $("child-list").addEventListener("input", function (ev) {
+      if (ev.target.getAttribute("data-child-name")) onChildNameInput(ev);
+    });
+    $("child-list").addEventListener("change", function (ev) {
+      if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
+      else if (ev.target.getAttribute("data-child-age")) onChildAgeChange(ev);
+    });
+    $("child-list").addEventListener("blur", function (ev) {
+      if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
+    }, true);
 
     $("child-list").addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-del-child]");
