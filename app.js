@@ -186,6 +186,11 @@
 
   function $(id) { return document.getElementById(id); }
 
+  function on(id, type, handler, useCapture) {
+    var el = $(id);
+    if (el) el.addEventListener(type, handler, !!useCapture);
+  }
+
   function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   }
@@ -661,7 +666,7 @@
   function renderChildren() {
     var host = $("child-list");
     if (!state.children.length) {
-      host.innerHTML = "<p class='empty'>尚未有小朋友。可按「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
+      host.innerHTML = "<p class='empty'>尚未有小朋友。可按標題旁 + 或「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
     } else {
       host.innerHTML = state.children.map(function (c) {
         var ageVal = c.age === "" || c.age == null ? "" : String(c.age);
@@ -689,7 +694,7 @@
     $("log-count").textContent = String(rows.length);
     var shown = rows.slice(0, logLimit);
     if (!shown.length) {
-      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。按右上「+」記下一部電影、一本書或一項活動，方便日後對照同齡時看過、讀過、做過什麼。</p>";
+      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。按「記下一項學習或活動」記下一部電影、一本書或一項活動，方便日後對照同齡時看過、讀過、做過什麼。</p>";
     } else {
       $("log-list").innerHTML = shown.map(function (log) {
         var child = childById(log.childId);
@@ -967,21 +972,43 @@
     state.personalCards = (data.personalCards || []).filter(Boolean).map(cleanCard);
   }
 
-  function bind() {
-    $("tab-public").addEventListener("click", function () { setMode("public"); });
-    $("tab-private").addEventListener("click", function () { setMode("private"); });
+  function addChildRow() {
+    state.children.push(normalizeChild({ id: uid(), name: "小朋友", age: "", note: "" }));
+    save();
+    renderChildren();
+    var list = $("child-list");
+    if (!list) return;
+    var nameInput = list.querySelector("[data-child-row]:last-child input[data-child-name]");
+    if (nameInput) nameInput.focus();
+  }
 
-    $("search").addEventListener("input", function () {
-      query = $("search").value.trim().toLowerCase();
+  function openAddLogForm() {
+    var form = $("add-log");
+    if (!form) return;
+    form.hidden = false;
+    var dateEl = $("log-date");
+    if (dateEl && !dateEl.value) dateEl.value = todayISO();
+    form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    var titleEl = $("log-title");
+    if (titleEl) titleEl.focus();
+  }
+
+  function bind() {
+    on("tab-public", "click", function () { setMode("public"); });
+    on("tab-private", "click", function () { setMode("private"); });
+
+    on("search", "input", function () {
+      var search = $("search");
+      query = search ? search.value.trim().toLowerCase() : "";
       renderCards();
     });
 
-    $("add-card").addEventListener("submit", function (ev) {
+    on("add-card", "submit", function (ev) {
       ev.preventDefault();
       openCommunitySuggest();
     });
 
-    $("card-list").addEventListener("click", function (ev) {
+    on("card-list", "click", function (ev) {
       var btn = ev.target.closest("[data-del-card]");
       if (!btn) return;
       var id = btn.getAttribute("data-del-card");
@@ -1037,18 +1064,18 @@
       persistChildEdits();
     }
 
-    $("child-list").addEventListener("input", function (ev) {
+    on("child-list", "input", function (ev) {
       if (ev.target.getAttribute("data-child-name")) onChildNameInput(ev);
     });
-    $("child-list").addEventListener("change", function (ev) {
+    on("child-list", "change", function (ev) {
       if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
       else if (ev.target.getAttribute("data-child-age")) onChildAgeChange(ev);
     });
-    $("child-list").addEventListener("blur", function (ev) {
+    on("child-list", "blur", function (ev) {
       if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
     }, true);
 
-    $("child-list").addEventListener("click", function (ev) {
+    on("child-list", "click", function (ev) {
       var btn = ev.target.closest("[data-del-child]");
       if (!btn) return;
       var id = btn.getAttribute("data-del-child");
@@ -1061,33 +1088,22 @@
       renderChildren();
     });
 
-    $("add-child-btn").addEventListener("click", function () {
-      state.children.push(normalizeChild({ id: uid(), name: "小朋友", age: "", note: "" }));
-      save();
-      renderChildren();
-      var row = $("child-list").querySelector("[data-child-row]:last-child input[data-child-name]");
-      if (row) row.focus();
-    });
-
-    $("add-log-open").addEventListener("click", function () {
-      var form = $("add-log");
-      form.hidden = false;
-      if (!$("log-date").value) $("log-date").value = todayISO();
-      form.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      $("log-title").focus();
-    });
+    on("add-child-head", "click", addChildRow);
+    on("add-child-btn", "click", addChildRow);
+    on("open-add-log", "click", openAddLogForm);
 
     renderLogKindPicker();
     fillContextFilter();
-    $("log-date").value = todayISO();
+    var logDateInit = $("log-date");
+    if (logDateInit) logDateInit.value = todayISO();
 
-    $("log-kind-pick").addEventListener("click", function (ev) {
+    on("log-kind-pick", "click", function (ev) {
       var btn = ev.target.closest("[data-log-kind]");
       if (!btn) return;
       logPickKind = btn.getAttribute("data-log-kind");
       renderLogKindPicker();
     });
-    $("add-log").addEventListener("submit", function (ev) {
+    on("add-log", "submit", function (ev) {
       ev.preventDefault();
       if (!state.children.length) return;
       var kind = normalizeContext($("log-context").value);
@@ -1120,19 +1136,21 @@
       renderSummary();
     });
 
-    $("filter-child").addEventListener("change", function () {
-      logChild = $("filter-child").value;
+    on("filter-child", "change", function () {
+      var sel = $("filter-child");
+      logChild = sel ? sel.value : "all";
       renderLogs();
     });
-    $("filter-context").addEventListener("change", function () {
-      logContext = $("filter-context").value;
+    on("filter-context", "change", function () {
+      var sel = $("filter-context");
+      logContext = sel ? sel.value : "all";
       renderLogs();
     });
-    $("more-logs").addEventListener("click", function () {
+    on("more-logs", "click", function () {
       logLimit += 20;
       renderLogs();
     });
-    $("log-list").addEventListener("click", function (ev) {
+    on("log-list", "click", function (ev) {
       var btn = ev.target.closest("[data-del-log]");
       if (!btn) return;
       var id = btn.getAttribute("data-del-log");
@@ -1142,11 +1160,16 @@
       renderSummary();
     });
 
-    $("export-btn").addEventListener("click", exportData);
-    $("import-btn").addEventListener("click", function () { $("import-file").click(); });
-    $("import-file").addEventListener("change", function () {
-      var file = $("import-file").files && $("import-file").files[0];
-      $("import-file").value = "";
+    on("export-btn", "click", exportData);
+    on("import-btn", "click", function () {
+      var input = $("import-file");
+      if (input) input.click();
+    });
+    on("import-file", "change", function () {
+      var importInput = $("import-file");
+      if (!importInput) return;
+      var file = importInput.files && importInput.files[0];
+      importInput.value = "";
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function () {

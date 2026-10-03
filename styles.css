@@ -459,9 +459,15 @@ button.child-remove {
   border-radius: 10px;
 }
 button.child-remove:hover { background: #f5ebe3; }
-.child-add-wrap { margin: 0 0 14px; }
+.child-add-wrap { margin: 0 0 8px; }
 button.child-add {
   min-height: 40px;
   padding: 6px 14px;
   font-size: 0.92rem;
+}
+.log-open-wrap { margin: 0 0 14px; }
+button.log-open {
+  width: 100%;
+  min-height: var(--tap);
+  justify-content: center;
 }
