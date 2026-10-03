@@ -93,28 +93,24 @@
       </section>
 
       <section id="panel-private" role="tabpanel" aria-labelledby="tab-private" hidden>
+        <div class="private-head">
+          <h2 class="private-title">家裡紀錄</h2>
+          <button type="button" class="icon-add" id="add-log-open" aria-label="新增一則學習紀錄" title="新增紀錄">+</button>
+        </div>
+
         <div class="note private-note">
           <p><strong>這是家長日記，不是診斷，不是病歷，不是評估報告。</strong></p>
           <p>小朋友與學習日記只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳，亦不會與其他家庭分享。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
           <p>若對健康、聽覺或發展有疑慮，請向母嬰健康院、家庭醫生或兒科醫生查詢。本頁不能代替他們。</p>
         </div>
 
-        <h2>小朋友</h2>
-        <div id="child-list"></div>
-        <form class="box" id="add-child">
-          <h2>新增一位</h2>
-          <div class="row two">
-            <label class="field" for="new-child-name">稱呼
-              <input id="new-child-name" type="text" maxlength="40" required placeholder="例如：姐姐">
-            </label>
-            <label class="field" for="new-child-note">年齡或出生備註
-              <input id="new-child-note" type="text" maxlength="240" placeholder="例如：2024年4月">
-            </label>
-          </div>
-          <div class="actions"><button class="primary" type="submit">加入</button></div>
-        </form>
+        <p class="chip-label" id="child-settings-label">小朋友</p>
+        <div id="child-list" class="child-rows" aria-labelledby="child-settings-label"></div>
+        <div class="child-add-wrap">
+          <button type="button" class="ghost child-add" id="add-child-btn">+ 小朋友</button>
+        </div>
 
-        <form class="box" id="add-log">
+        <form class="box" id="add-log" hidden>
           <h2>記下一項學習或活動</h2>
           <div class="row two">
             <label class="field" for="log-date">日期
@@ -132,11 +128,6 @@
           <label class="field" for="log-title">名稱（必填）
             <input id="log-title" type="text" maxlength="120" required placeholder="例如：《好餓的毛毛蟲》、公園騎單車、紀錄片《地球脉動》">
           </label>
-          <div class="field">
-            <span class="chip-label" id="log-age-label">小朋友當時的年齡段（必選）</span>
-            <div id="log-age-pick" class="kind-row" role="group" aria-labelledby="log-age-label"></div>
-            <input type="hidden" id="log-age-band" name="log-age-band" value="">
-          </div>
           <label class="field" for="log-note">備註（可留空）
             <textarea id="log-note" maxlength="2000" placeholder="例如：與妹妹一起看完；在圖書館借閱。"></textarea>
           </label>
