@@ -183,9 +183,13 @@
   var logContext = "all";
   var logLimit = 20;
   var logPickKind = "";
-  var logPickAge = "";
 
   function $(id) { return document.getElementById(id); }
+
+  function on(id, type, handler, useCapture) {
+    var el = $(id);
+    if (el) el.addEventListener(type, handler, !!useCapture);
+  }
 
   function uid() {
     return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -201,12 +205,147 @@
     return {
       version: 1,
       children: [
-        { id: "child-older", name: "姐姐", note: "請改為實際出生月份或備註。" },
-        { id: "child-younger", name: "妹妹", note: "請改為實際出生月份或備註。" }
+        { id: uid(), name: "小朋友", birthYm: "", legacyAge: "", note: "" }
       ],
       logs: [],
       personalCards: []
     };
+  }
+
+  function parseBirthYm(value) {
+    if (value == null || value === "") return "";
+    var v = String(value).trim();
+    var m = v.match(/^(\d{4})-(\d{1,2})$/);
+    if (!m) return "";
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || y < 1900 || y > 2100 || mo < 1 || mo > 12) return "";
+    return String(y) + "-" + String(mo).padStart(2, "0");
+  }
+
+  function parseLegacyAgeValue(value) {
+    if (value == null || value === "") return "";
+    if (typeof value === "number" && value >= 0 && value <= 99 && Number.isFinite(value)) {
+      return Math.floor(value);
+    }
+    var n = parseInt(String(value).trim(), 10);
+    if (!isNaN(n) && n >= 0 && n <= 99) return n;
+    return "";
+  }
+
+  function parseLegacyAge(source) {
+    if (!source) return "";
+    var fromField = parseLegacyAgeValue(source.legacyAge);
+    if (fromField !== "") return fromField;
+    if (parseBirthYm(source.birthYm || source.birthMonth)) return "";
+    return parseLegacyAgeValue(source.age);
+  }
+
+  function ageFromBirthYm(birthYm, refDate) {
+    var ym = parseBirthYm(birthYm);
+    if (!ym) return "";
+    var parts = ym.split("-");
+    var birthYear = parseInt(parts[0], 10);
+    var birthMonth = parseInt(parts[1], 10);
+    var now = refDate || new Date();
+    var nowYear = now.getFullYear();
+    var nowMonth = now.getMonth() + 1;
+    if (nowYear < birthYear || (nowYear === birthYear && nowMonth < birthMonth)) return 0;
+    var age = nowYear - birthYear;
+    if (nowMonth < birthMonth) age -= 1;
+    if (age < 0) age = 0;
+    if (age > 99) age = 99;
+    return age;
+  }
+
+  function childAgeForNewLog(child) {
+    if (!child) return "";
+    var birth = parseBirthYm(child.birthYm);
+    if (birth) return ageFromBirthYm(birth);
+    return parseLegacyAge(child);
+  }
+
+  function parseLogChildAge(log) {
+    if (!log) return "";
+    if (typeof log.childAge === "number" && log.childAge >= 0 && log.childAge <= 99) {
+      return Math.floor(log.childAge);
+    }
+    if (log.childAge !== undefined && log.childAge !== null && log.childAge !== "") {
+      var n = parseInt(String(log.childAge).trim(), 10);
+      if (!isNaN(n) && n >= 0 && n <= 99) return n;
+    }
+    return "";
+  }
+
+  function numericAgeToBand(age) {
+    if (age === "" || age == null) return "";
+    var n = Number(age);
+    if (!Number.isFinite(n)) return "";
+    if (n < 6) return "0–6";
+    if (n < 12) return "6–12";
+    if (n < 18) return "12–18";
+    return ">18";
+  }
+
+  function logAgeBand(log) {
+    var band = normalizeAgeBand(log.ageBand);
+    if (band) return band;
+    return numericAgeToBand(parseLogChildAge(log)) || "";
+  }
+
+  function formatLogAge(log) {
+    var n = parseLogChildAge(log);
+    if (n !== "") return String(n) + " 歲";
+    if (log.ageBand) return log.ageBand;
+    return "";
+  }
+
+  function normalizeChild(raw) {
+    if (typeof raw === "string") {
+      return { id: uid(), name: String(raw).trim().slice(0, 40) || "小朋友", birthYm: "", legacyAge: "", note: "" };
+    }
+    var c = raw || {};
+    var id = String(c.id || "").trim();
+    if (!id) id = uid();
+    var name = String(c.name || "小朋友").trim().slice(0, 40) || "小朋友";
+    var birthYm = parseBirthYm(c.birthYm || c.birthMonth);
+    var legacyAge = birthYm ? parseLegacyAgeValue(c.legacyAge) : parseLegacyAge(c);
+    return {
+      id: id,
+      name: name,
+      birthYm: birthYm,
+      legacyAge: legacyAge,
+      note: String(c.note || "").slice(0, 240)
+    };
+  }
+
+  function migrateChildren(children, logs) {
+    var list = Array.isArray(children) ? children : [];
+    var out = [];
+    list.forEach(function (item) {
+      if (item == null) return;
+      out.push(normalizeChild(item));
+    });
+    var byId = {};
+    out.forEach(function (c) { byId[c.id] = c; });
+    (logs || []).forEach(function (log) {
+      var cid = String(log.childId || "").trim();
+      if (!cid) return;
+      if (byId[cid]) return;
+      var byName = null;
+      for (var i = 0; i < out.length; i++) {
+        if (out[i].name === cid) { byName = out[i]; break; }
+      }
+      if (byName) {
+        log.childId = byName.id;
+        return;
+      }
+      var created = normalizeChild({ id: uid(), name: cid.slice(0, 40), birthYm: "", legacyAge: "", note: "" });
+      out.push(created);
+      byId[created.id] = created;
+      log.childId = created.id;
+    });
+    return out;
   }
 
   function learningKindById(kindId) {
@@ -274,7 +413,6 @@
       if (!raw) return defaultState();
       var data = JSON.parse(raw);
       if (!data || data.version !== 1) return defaultState();
-      data.children = Array.isArray(data.children) ? data.children : [];
       data.logs = Array.isArray(data.logs) ? data.logs.map(function (log) {
         var copy = {};
         for (var k in log) if (Object.prototype.hasOwnProperty.call(log, k)) copy[k] = log[k];
@@ -285,9 +423,12 @@
           var legacyTitle = legacyContextLabel(rawContext);
           if (legacyTitle) copy.title = legacyTitle.slice(0, 120);
         }
+        copy.childAge = parseLogChildAge(copy);
         copy.ageBand = normalizeAgeBand(copy.ageBand);
+        if (!copy.ageBand && copy.childAge !== "") copy.ageBand = numericAgeToBand(copy.childAge);
         return copy;
       }) : [];
+      data.children = migrateChildren(data.children, data.logs);
       data.personalCards = Array.isArray(data.personalCards) ? data.personalCards.map(function (card) {
         var copy = {};
         for (var k in card) if (Object.prototype.hasOwnProperty.call(card, k)) copy[k] = card[k];
@@ -568,14 +709,20 @@
   function renderChildren() {
     var host = $("child-list");
     if (!state.children.length) {
-      host.innerHTML = "<p class='empty'>尚未有小朋友。下方可以新增一位。紀錄仍然只留在這部瀏覽器。</p>";
+      host.innerHTML = "<p class='empty'>尚未有小朋友。可按標題旁 + 或「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
     } else {
       host.innerHTML = state.children.map(function (c) {
-        return "<article class='child'>" +
-          "<h3><label class='field'>稱呼<input data-child-name='" + esc(c.id) + "' type='text' value='" + esc(c.name) + "' maxlength='40'></label></h3>" +
-          "<label class='field'>年齡或出生備註<textarea data-child-note='" + esc(c.id) + "' maxlength='240'>" + esc(c.note || "") + "</textarea></label>" +
-          "<div class='actions'><button type='button' class='danger' data-del-child='" + esc(c.id) + "'>移除此人（連同其紀錄）</button></div>" +
-          "</article>";
+        var birthVal = parseBirthYm(c.birthYm) || "";
+        var legacy = parseLegacyAge(c);
+        var hint = !birthVal && legacy !== ""
+          ? "<p class='legacy-age-hint'>舊年齡為 " + esc(String(legacy)) + " 歲，請設定出生年月</p>"
+          : "";
+        return "<div class='child-row' data-child-row='" + esc(c.id) + "'>" +
+          "<label class='field-inline'><span>稱謂</span><input data-child-name='" + esc(c.id) + "' type='text' value='" + esc(c.name) + "' maxlength='40' placeholder='例如：姐姐' autocomplete='off'></label>" +
+          "<label class='field-inline'><span>出生年月</span><input data-child-birth='" + esc(c.id) + "' type='month' value='" + esc(birthVal) + "'></label>" +
+          "<button type='button' class='child-remove' data-del-child='" + esc(c.id) + "' aria-label='移除「" + esc(c.name) + "」'>❌</button>" +
+          hint +
+          "</div>";
       }).join("");
     }
     refreshChildSelects();
@@ -595,13 +742,14 @@
     $("log-count").textContent = String(rows.length);
     var shown = rows.slice(0, logLimit);
     if (!shown.length) {
-      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。記下一部電影、一本書或一項活動，並標示當時的年齡段，方便日後對照同齡時看過、讀過、做過什麼。</p>";
+      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。按「記下一項學習或活動」記下一部電影、一本書或一項活動，方便日後對照同齡時看過、讀過、做過什麼。</p>";
     } else {
       $("log-list").innerHTML = shown.map(function (log) {
         var child = childById(log.childId);
         var extra = [];
         extra.push(contextLabel(log.context));
-        if (log.ageBand) extra.push(log.ageBand);
+        var ageText = formatLogAge(log);
+        if (ageText) extra.push(ageText);
         if (log.intensity) extra.push(intensityLabel(log.intensity));
         if (log.durationMin) extra.push(String(log.durationMin) + " 分鐘");
         return "<article class='log'>" +
@@ -645,13 +793,14 @@
     var grouped = {};
     bands.forEach(function (band) { grouped[band] = {}; });
     recent.forEach(function (log) {
-      var band = log.ageBand && AGE_BANDS.indexOf(log.ageBand) !== -1 ? log.ageBand : SUMMARY_AGE_UNSET;
+      var resolved = logAgeBand(log);
+      var band = resolved && AGE_BANDS.indexOf(resolved) !== -1 ? resolved : SUMMARY_AGE_UNSET;
       var kind = normalizeContext(log.context);
       if (!grouped[band][kind]) grouped[band][kind] = [];
       grouped[band][kind].push(log);
     });
     var html = "<p><strong>最近 14 日</strong> · " + esc(win.start) + " 至 " + esc(win.end) + "</p>" +
-      "<p class='intensity'>按小朋友當時標示的年齡段與種類列出名稱，方便回想同齡時的觀看、閱讀與活動；不是評估分數，亦不會與其他家庭比較。</p>";
+      "<p class='intensity'>按紀錄時的年齡（或舊版年齡段）與種類列出名稱，方便回想同齡時的觀看、閱讀與活動；不是評估分數，亦不會與其他家庭比較。</p>";
     bands.forEach(function (band) {
       var kinds = grouped[band];
       var kindIds = LEARNING_KINDS.map(function (k) { return k.id; }).filter(function (id) {
@@ -686,14 +835,6 @@
       return "<button type='button' class='kind-chip' data-log-kind='" + esc(k.id) + "' aria-pressed='" + pressed + "'>" + esc(k.label) + "</button>";
     }).join("");
     $("log-context").value = logPickKind;
-    var ageHost = $("log-age-pick");
-    if (ageHost) {
-      ageHost.innerHTML = AGE_BANDS.map(function (band) {
-        var pressed = band === logPickAge ? "true" : "false";
-        return "<button type='button' class='kind-chip' data-log-age='" + esc(band) + "' aria-pressed='" + pressed + "'>" + esc(band) + "</button>";
-      }).join("");
-      $("log-age-band").value = logPickAge;
-    }
   }
 
   function fillContextFilter() {
@@ -735,7 +876,7 @@
     state.children.forEach(function (c) { ids[c.id] = true; });
     (data.children || []).forEach(function (c) {
       if (!c || !c.id || ids[c.id]) return;
-      state.children.push({ id: String(c.id), name: String(c.name || "小朋友").slice(0, 40), note: String(c.note || "").slice(0, 240) });
+      state.children.push(normalizeChild(c));
       ids[c.id] = true;
     });
     var logIds = {};
@@ -770,7 +911,8 @@
       date: /^\d{4}-\d{2}-\d{2}$/.test(l.date) ? l.date : todayISO(),
       context: ctx,
       title: title,
-      ageBand: normalizeAgeBand(l.ageBand),
+      childAge: parseLogChildAge(l),
+      ageBand: normalizeAgeBand(l.ageBand) || numericAgeToBand(parseLogChildAge(l)),
       note: String(l.note || "").slice(0, 2000),
       intensity: intensity,
       durationMin: (mins > 0 && mins < 10000) ? mins : ""
@@ -873,28 +1015,48 @@
   }
 
   function replaceImport(data) {
-    state.children = (data.children || []).filter(Boolean).map(function (c) {
-      return { id: String(c.id || uid()), name: String(c.name || "小朋友").slice(0, 40), note: String(c.note || "").slice(0, 240) };
-    });
     state.logs = (data.logs || []).filter(Boolean).map(cleanLog);
+    state.children = migrateChildren(data.children || [], state.logs);
     state.personalCards = (data.personalCards || []).filter(Boolean).map(cleanCard);
   }
 
-  function bind() {
-    $("tab-public").addEventListener("click", function () { setMode("public"); });
-    $("tab-private").addEventListener("click", function () { setMode("private"); });
+  function addChildRow() {
+    state.children.push(normalizeChild({ id: uid(), name: "小朋友", birthYm: "", legacyAge: "", note: "" }));
+    save();
+    renderChildren();
+    var list = $("child-list");
+    if (!list) return;
+    var nameInput = list.querySelector("[data-child-row]:last-child input[data-child-name]");
+    if (nameInput) nameInput.focus();
+  }
 
-    $("search").addEventListener("input", function () {
-      query = $("search").value.trim().toLowerCase();
+  function openAddLogForm() {
+    var form = $("add-log");
+    if (!form) return;
+    form.hidden = false;
+    var dateEl = $("log-date");
+    if (dateEl && !dateEl.value) dateEl.value = todayISO();
+    form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    var titleEl = $("log-title");
+    if (titleEl) titleEl.focus();
+  }
+
+  function bind() {
+    on("tab-public", "click", function () { setMode("public"); });
+    on("tab-private", "click", function () { setMode("private"); });
+
+    on("search", "input", function () {
+      var search = $("search");
+      query = search ? search.value.trim().toLowerCase() : "";
       renderCards();
     });
 
-    $("add-card").addEventListener("submit", function (ev) {
+    on("add-card", "submit", function (ev) {
       ev.preventDefault();
       openCommunitySuggest();
     });
 
-    $("card-list").addEventListener("click", function (ev) {
+    on("card-list", "click", function (ev) {
       var btn = ev.target.closest("[data-del-card]");
       if (!btn) return;
       var id = btn.getAttribute("data-del-card");
@@ -905,23 +1067,56 @@
       renderCards();
     });
 
-    $("child-list").addEventListener("change", function (ev) {
-      var name = ev.target.getAttribute("data-child-name");
-      var note = ev.target.getAttribute("data-child-note");
-      var child = childById(name || note);
-      if (!child) return;
-      if (name) {
-        child.name = ev.target.value.trim().slice(0, 40) || "小朋友";
-        ev.target.value = child.name;
-      }
-      if (note) child.note = ev.target.value.slice(0, 240);
+    function persistChildEdits() {
       save();
       refreshChildSelects();
       renderLogs();
       renderSummary();
-    });
+    }
 
-    $("child-list").addEventListener("click", function (ev) {
+    function onChildNameInput(ev) {
+      var nameId = ev.target.getAttribute("data-child-name");
+      if (!nameId) return;
+      var child = childById(nameId);
+      if (!child) return;
+      child.name = ev.target.value.slice(0, 40);
+      persistChildEdits();
+    }
+
+    function commitChildNameField(input) {
+      var nameId = input.getAttribute("data-child-name");
+      if (!nameId) return;
+      var child = childById(nameId);
+      if (!child) return;
+      var normalized = input.value.trim().slice(0, 40) || "小朋友";
+      child.name = normalized;
+      input.value = normalized;
+      persistChildEdits();
+    }
+
+    function onChildBirthChange(ev) {
+      var birthId = ev.target.getAttribute("data-child-birth");
+      if (!birthId) return;
+      var child = childById(birthId);
+      if (!child) return;
+      child.birthYm = parseBirthYm(ev.target.value) || "";
+      if (!child.birthYm) ev.target.value = "";
+      save();
+      renderChildren();
+    }
+
+    on("child-list", "input", function (ev) {
+      if (ev.target.getAttribute("data-child-name")) onChildNameInput(ev);
+    });
+    on("child-list", "change", function (ev) {
+      if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
+      else if (ev.target.getAttribute("data-child-birth")) onChildBirthChange(ev);
+    });
+    on("child-list", "blur", function (ev) {
+      if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
+    }, true);
+
+    on("child-list", "click", function (ev) {
       var btn = ev.target.closest("[data-del-child]");
       if (!btn) return;
       var id = btn.getAttribute("data-del-child");
@@ -934,34 +1129,22 @@
       renderChildren();
     });
 
-    $("add-child").addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      var name = $("new-child-name").value.trim();
-      if (!name) return;
-      state.children.push({ id: uid(), name: name.slice(0, 40), note: $("new-child-note").value.slice(0, 240) });
-      save();
-      $("add-child").reset();
-      renderChildren();
-    });
+    on("add-child-head", "click", addChildRow);
+    on("add-child-btn", "click", addChildRow);
+    on("open-add-log", "click", openAddLogForm);
 
     renderLogKindPicker();
     fillContextFilter();
-    $("log-date").value = todayISO();
+    var logDateInit = $("log-date");
+    if (logDateInit) logDateInit.value = todayISO();
 
-    $("log-kind-pick").addEventListener("click", function (ev) {
+    on("log-kind-pick", "click", function (ev) {
       var btn = ev.target.closest("[data-log-kind]");
       if (!btn) return;
       logPickKind = btn.getAttribute("data-log-kind");
       renderLogKindPicker();
     });
-    $("log-age-pick").addEventListener("click", function (ev) {
-      var btn = ev.target.closest("[data-log-age]");
-      if (!btn) return;
-      logPickAge = btn.getAttribute("data-log-age");
-      renderLogKindPicker();
-    });
-
-    $("add-log").addEventListener("submit", function (ev) {
+    on("add-log", "submit", function (ev) {
       ev.preventDefault();
       if (!state.children.length) return;
       var kind = normalizeContext($("log-context").value);
@@ -974,17 +1157,16 @@
         alert("請填寫名稱（例如電影、書或活動的標題）。");
         return;
       }
-      var ageBand = normalizeAgeBand($("log-age-band").value || logPickAge);
-      if (!ageBand) {
-        alert("請點選小朋友當時的年齡段（0–6、6–12、12–18 或 >18）。");
-        return;
-      }
+      var child = childById($("log-child").value);
+      var childAge = childAgeForNewLog(child);
+      var ageBand = childAge !== "" ? numericAgeToBand(childAge) : "";
       state.logs.push({
         id: uid(),
         childId: $("log-child").value,
         date: $("log-date").value || todayISO(),
         context: kind,
         title: title,
+        childAge: childAge,
         ageBand: ageBand,
         note: $("log-note").value.trim().slice(0, 2000)
       });
@@ -995,19 +1177,21 @@
       renderSummary();
     });
 
-    $("filter-child").addEventListener("change", function () {
-      logChild = $("filter-child").value;
+    on("filter-child", "change", function () {
+      var sel = $("filter-child");
+      logChild = sel ? sel.value : "all";
       renderLogs();
     });
-    $("filter-context").addEventListener("change", function () {
-      logContext = $("filter-context").value;
+    on("filter-context", "change", function () {
+      var sel = $("filter-context");
+      logContext = sel ? sel.value : "all";
       renderLogs();
     });
-    $("more-logs").addEventListener("click", function () {
+    on("more-logs", "click", function () {
       logLimit += 20;
       renderLogs();
     });
-    $("log-list").addEventListener("click", function (ev) {
+    on("log-list", "click", function (ev) {
       var btn = ev.target.closest("[data-del-log]");
       if (!btn) return;
       var id = btn.getAttribute("data-del-log");
@@ -1017,11 +1201,16 @@
       renderSummary();
     });
 
-    $("export-btn").addEventListener("click", exportData);
-    $("import-btn").addEventListener("click", function () { $("import-file").click(); });
-    $("import-file").addEventListener("change", function () {
-      var file = $("import-file").files && $("import-file").files[0];
-      $("import-file").value = "";
+    on("export-btn", "click", exportData);
+    on("import-btn", "click", function () {
+      var input = $("import-file");
+      if (input) input.click();
+    });
+    on("import-file", "change", function () {
+      var importInput = $("import-file");
+      if (!importInput) return;
+      var file = importInput.files && importInput.files[0];
+      importInput.value = "";
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function () {
