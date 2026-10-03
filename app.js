@@ -3,15 +3,39 @@
 
   var KEY = "homeschool-hk-private-v1";
   var LEARNING_KINDS = [
-    { id: "learning-movie", label: "電影" },
-    { id: "learning-book", label: "書" },
-    { id: "learning-activity", label: "活動" },
+    { id: "learning-read", label: "閱讀" },
+    { id: "learning-video", label: "影音" },
+    { id: "learning-sport", label: "運動" },
+    { id: "learning-game", label: "遊戲" },
+    { id: "learning-trip", label: "外遊" },
+    { id: "learning-digital", label: "數位" },
     { id: "learning-course", label: "課程" },
-    { id: "learning-music", label: "音樂" },
-    { id: "learning-outing", label: "參觀或外出" },
-    { id: "learning-media", label: "影音或網上學習" },
     { id: "learning-other", label: "其他" }
   ];
+  var OLD_LEARNING_TO_NEW = {
+    "learning-movie": "learning-video",
+    "learning-media": "learning-video",
+    "learning-book": "learning-read",
+    "learning-outing": "learning-trip",
+    "learning-activity": "learning-other",
+    "learning-music": "learning-other"
+  };
+  var PUBLIC_KIND_TO_ID = {
+    "書": "learning-read",
+    "閱讀": "learning-read",
+    "電影": "learning-video",
+    "影音或網上學習": "learning-video",
+    "影音": "learning-video",
+    "參觀或外出": "learning-trip",
+    "外遊": "learning-trip",
+    "課程": "learning-course",
+    "音樂": "learning-other",
+    "活動": "learning-other",
+    "其他": "learning-other",
+    "運動": "learning-sport",
+    "遊戲": "learning-game",
+    "數位": "learning-digital"
+  };
   var LEGACY_DIARY_AREAS = [
     {
       id: "sleep",
@@ -79,7 +103,7 @@
       label: "社交",
       kinds: [
         { id: "social-family", label: "與家人互動" },
-        { id: "social-peer", label: "與同齡小朋友" },
+        { id: "social-peer", label: "與同齡小孩" },
         { id: "social-turn", label: "分享、輪候或合作" },
         { id: "social-stranger", label: "面對陌生人或新場所" }
       ]
@@ -205,7 +229,7 @@
     return {
       version: 1,
       children: [
-        { id: uid(), name: "小朋友", birthYm: "", legacyAge: "", note: "" }
+        { id: uid(), name: "小孩", birthYm: "", legacyAge: "", note: "" }
       ],
       logs: [],
       personalCards: []
@@ -302,12 +326,12 @@
 
   function normalizeChild(raw) {
     if (typeof raw === "string") {
-      return { id: uid(), name: String(raw).trim().slice(0, 40) || "小朋友", birthYm: "", legacyAge: "", note: "" };
+      return { id: uid(), name: String(raw).trim().slice(0, 40) || "小孩", birthYm: "", legacyAge: "", note: "" };
     }
     var c = raw || {};
     var id = String(c.id || "").trim();
     if (!id) id = uid();
-    var name = String(c.name || "小朋友").trim().slice(0, 40) || "小朋友";
+    var name = String(c.name || "小孩").trim().slice(0, 40) || "小孩";
     var birthYm = parseBirthYm(c.birthYm || c.birthMonth);
     var legacyAge = birthYm ? parseLegacyAgeValue(c.legacyAge) : parseLegacyAge(c);
     return {
@@ -392,11 +416,18 @@
     var v = value == null ? "" : String(value).trim();
     if (!v) return "learning-other";
     if (learningKindById(v)) return v;
+    if (OLD_LEARNING_TO_NEW[v]) return v;
     var legacyKind = normalizeLegacyKindId(v);
     if (legacyKind && LEGACY_KIND_TO_LEARNING[legacyKind]) return LEGACY_KIND_TO_LEARNING[legacyKind];
     var top = LEGACY_CONTEXT[v] || (LEGACY_TOP_TO_KIND[v] ? v : "");
     if (top && LEGACY_TOP_TO_LEARNING[top]) return LEGACY_TOP_TO_LEARNING[top];
-    return "learning-other";
+    return v;
+  }
+
+  function kindGroup(id) {
+    var normalized = normalizeContext(id);
+    if (OLD_LEARNING_TO_NEW[normalized]) return OLD_LEARNING_TO_NEW[normalized];
+    return normalized;
   }
 
   function normalizeAgeBand(value) {
@@ -468,10 +499,14 @@
   }
 
   function contextLabel(id) {
-    var normalized = normalizeContext(id);
-    var hit = learningKindById(normalized);
+    var raw = id == null ? "" : String(id);
+    var normalized = normalizeContext(raw);
+    var grouped = kindGroup(normalized);
+    var hit = learningKindById(grouped);
     if (hit) return hit.label;
-    return String(id == null ? "" : id);
+    var legacy = legacyContextLabel(raw);
+    if (legacy) return legacy;
+    return raw;
   }
 
   function logHeadline(log) {
@@ -698,18 +733,40 @@
     }
   }
 
+  var selectedChildId = "";
+
+  function ensureSelectedChild() {
+    if (childById(selectedChildId)) return;
+    selectedChildId = state.children.length ? state.children[0].id : "";
+  }
+
+  function refreshPersonButton() {
+    ensureSelectedChild();
+    var child = childById(selectedChildId);
+    var label = child ? childLabel(child) : "小孩";
+    var nameEl = $("selected-child-name");
+    if (nameEl) nameEl.textContent = label;
+    var btn = $("child-toggle");
+    if (btn) btn.setAttribute("aria-label", "小孩設定：" + label);
+  }
+
   function refreshChildSelects() {
+    ensureSelectedChild();
     var kids = state.children.map(function (c) { return { id: c.id, name: c.name }; });
     fillSelect($("log-child"), kids, null);
-    fillSelect($("filter-child"), kids, { value: "all", label: "全部小朋友" });
+    var logSel = $("log-child");
+    if (logSel && selectedChildId && childById(selectedChildId)) logSel.value = selectedChildId;
+    if (logSel) logSel.hidden = state.children.length < 2;
+    fillSelect($("filter-child"), kids, { value: "all", label: "全部小孩" });
     if (logChild !== "all" && childById(logChild)) $("filter-child").value = logChild;
     else logChild = "all";
+    refreshPersonButton();
   }
 
   function renderChildren() {
     var host = $("child-list");
     if (!state.children.length) {
-      host.innerHTML = "<p class='empty'>尚未有小朋友。可按「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
+      host.innerHTML = "<p class='empty'>尚未有小孩。可按「+ 小孩」加入。紀錄仍然只留在這部瀏覽器。</p>";
     } else {
       host.innerHTML = state.children.map(function (c) {
         var birthVal = parseBirthYm(c.birthYm) || "";
@@ -733,7 +790,7 @@
   function renderLogs() {
     var rows = state.logs.filter(function (log) {
       if (logChild !== "all" && log.childId !== logChild) return false;
-      if (logContext !== "all" && normalizeContext(log.context) !== logContext) return false;
+      if (logContext !== "all" && kindGroup(log.context) !== logContext) return false;
       return true;
     }).sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
@@ -742,7 +799,7 @@
     $("log-count").textContent = String(rows.length);
     var shown = rows.slice(0, logLimit);
     if (!shown.length) {
-      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。按「記下一項學習或活動」記下一部電影、一本書或一項活動，方便日後對照同齡時看過、讀過、做過什麼。</p>";
+      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。按「記下一項學習或活動」記下閱讀、影音、運動或其他項目。</p>";
     } else {
       $("log-list").innerHTML = shown.map(function (log) {
         var child = childById(log.childId);
@@ -753,7 +810,7 @@
         if (log.intensity) extra.push(intensityLabel(log.intensity));
         if (log.durationMin) extra.push(String(log.durationMin) + " 分鐘");
         return "<article class='log'>" +
-          "<div class='log-head'><h3>" + esc(child ? child.name : "（已移除的小朋友）") + " · " + esc(logHeadline(log)) + "</h3>" +
+          "<div class='log-head'><h3>" + esc(child ? child.name : "（已移除的小孩）") + " · " + esc(logHeadline(log)) + "</h3>" +
           "<time datetime='" + esc(log.date) + "'>" + esc(log.date) + "</time></div>" +
           (extra.length ? "<p class='intensity'>" + esc(extra.join(" · ")) + "</p>" : "") +
           (log.note ? "<p>" + esc(log.note) + "</p>" : "") +
@@ -774,8 +831,9 @@
 
   function renderSummary() {
     var host = $("summary");
+    if (!host) return;
     if (!state.children.length) {
-      host.innerHTML = "<p class='empty'>新增一位小朋友之後，這裡會按年齡段與種類列出最近 14 日記下的電影、書籍與活動名稱，方便對照「這個年紀常看什麼、讀什麼、做什麼」。資料只在本機，不會上傳或與他人分享。</p>";
+      host.innerHTML = "<p class='empty'>新增一位小孩之後，這裡會按年齡段與種類列出最近 14 日記下的電影、書籍與活動名稱，方便對照「這個年紀常看什麼、讀什麼、做什麼」。資料只在本機，不會上傳或與他人分享。</p>";
       return;
     }
     var win = summaryWindow();
@@ -897,7 +955,7 @@
   function cleanLog(l) {
     var rawContext = l.context;
     var ctx = normalizeContext(rawContext);
-    if (!learningKindById(ctx)) ctx = "learning-other";
+    if (!ctx) ctx = "learning-other";
     var title = String(l.title || "").trim().slice(0, 120);
     if (!title) {
       var legacyTitle = legacyContextLabel(rawContext);
@@ -1021,7 +1079,7 @@
   }
 
   function addChildRow() {
-    state.children.push(normalizeChild({ id: uid(), name: "小朋友", birthYm: "", legacyAge: "", note: "" }));
+    state.children.push(normalizeChild({ id: uid(), name: "小孩", birthYm: "", legacyAge: "", note: "" }));
     save();
     renderChildren();
     var list = $("child-list");
@@ -1034,16 +1092,307 @@
     var form = $("add-log");
     if (!form) return;
     form.hidden = false;
+    ensureSelectedChild();
     var dateEl = $("log-date");
     if (dateEl && !dateEl.value) dateEl.value = todayISO();
-    form.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    var titleEl = $("log-title");
-    if (titleEl) titleEl.focus();
+    var logSel = $("log-child");
+    if (logSel && selectedChildId && childById(selectedChildId)) logSel.value = selectedChildId;
+    var kindField = $("log-kind-field");
+    if (kindField) kindField.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    var kindHost = $("log-kind-pick");
+    var chip = kindHost && kindHost.querySelector("button");
+    if (chip) chip.focus();
+  }
+
+
+  var PUBLIC_EXEC = "https://script.google.com/macros/s/AKfycbzSQhdoAlfDfYgXUDg9ObVmhM_Cay4IiZ_IeGNOxzf9ePPlQd9_rn0s92fnb2uQgZXwug/exec";
+  var HEART_KEY = "homeschool-hk-hearts-v1";
+  var publicShareItems = [];
+  var heartedMap = loadHearted();
+
+  function loadHearted() {
+    try {
+      var raw = localStorage.getItem(HEART_KEY);
+      var data = raw ? JSON.parse(raw) : {};
+      if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+      return data;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveHearted() {
+    localStorage.setItem(HEART_KEY, JSON.stringify(heartedMap));
+  }
+
+  function shareKey(item) {
+    return String(item.ageBand || "") + "\n" + String(item.kind || "") + "\n" + String(item.title || "");
+  }
+
+  function kindIdFromLabel(label) {
+    if (PUBLIC_KIND_TO_ID[label]) return PUBLIC_KIND_TO_ID[label];
+    for (var i = 0; i < LEARNING_KINDS.length; i++) {
+      if (LEARNING_KINDS[i].label === label) return LEARNING_KINDS[i].id;
+    }
+    return "";
+  }
+
+  function childLabel(child) {
+    return String((child && child.name) || "").trim() || "小孩";
+  }
+
+  function heartLabel(n, filled) {
+    var count = typeof n === "number" && n >= 0 ? n : 0;
+    return (filled ? "♥ " : "♡ ") + String(count);
+  }
+
+  function setShareStatus(article, text, isError) {
+    var el = article && article.querySelector("[data-share-status]");
+    if (!el) return;
+    el.hidden = false;
+    el.textContent = text;
+    el.classList.toggle("is-error", !!isError);
+  }
+
+  function copyShareToChild(item, child) {
+    var kind = kindIdFromLabel(item.kind) || "learning-other";
+    var childAge = childAgeForNewLog(child);
+    var ageBand = childAge !== "" ? numericAgeToBand(childAge) : "";
+    state.logs.push({
+      id: uid(),
+      childId: child.id,
+      date: todayISO(),
+      context: kind,
+      title: String(item.title || "").trim().slice(0, 120),
+      childAge: childAge,
+      ageBand: ageBand,
+      note: ""
+    });
+    save();
+    renderLogs();
+    renderSummary();
+  }
+
+  function renderPublicShares() {
+    var host = $("share-list");
+    if (!host) return;
+    if (!publicShareItems.length) {
+      host.innerHTML = "<p class='empty'>這 7 日尚未有分享。</p>";
+      return;
+    }
+    host.innerHTML = publicShareItems.map(function (item, index) {
+      var filled = !!heartedMap[shareKey(item)];
+      var hearts = typeof item.hearts === "number" ? item.hearts : 0;
+      return "<article class='share-item' data-share-index='" + index + "'>" +
+        "<div class='share-main'>" +
+          "<div class='share-title'>" + esc(item.title) + "</div>" +
+          "<div class='share-meta'>" + esc(item.ageBand) + " · " + esc(item.kind) + "</div>" +
+        "</div>" +
+        "<div class='share-actions'>" +
+          "<button type='button' class='share-btn' data-share-plus='" + index + "'>+1</button>" +
+          "<button type='button' class='share-btn" + (filled ? " hearted" : "") + "' data-share-heart='" + index + "' aria-pressed='" + (filled ? "true" : "false") + "'>" + heartLabel(hearts, filled) + "</button>" +
+        "</div>" +
+        "<div class='share-pick' data-share-pick hidden></div>" +
+        "<p class='share-status' data-share-status hidden></p>" +
+      "</article>";
+    }).join("");
+  }
+
+  function openChildPick(article, index) {
+    var pick = article.querySelector("[data-share-pick]");
+    if (!pick) return;
+    pick.hidden = false;
+    pick.innerHTML = "<span class='share-pick-label'>記入哪一位？</span>" +
+      state.children.map(function (c) {
+        return "<button type='button' class='kind-chip' data-share-child='" + esc(c.id) + "'>" + esc(childLabel(c)) + "</button>";
+      }).join("");
+  }
+
+  function onSharePlus(article, index) {
+    var item = publicShareItems[index];
+    if (!item) return;
+    if (!state.children.length) {
+      var pick = article.querySelector("[data-share-pick]");
+      if (pick) { pick.hidden = true; pick.innerHTML = ""; }
+      setShareStatus(article, "請先到「家裡紀錄」加入小孩。", true);
+      return;
+    }
+    if (state.children.length === 1) {
+      var only = state.children[0];
+      copyShareToChild(item, only);
+      var pickOne = article.querySelector("[data-share-pick]");
+      if (pickOne) { pickOne.hidden = true; pickOne.innerHTML = ""; }
+      setShareStatus(article, "已記入「" + childLabel(only) + "」。", false);
+      return;
+    }
+    var existing = article.querySelector("[data-share-pick]");
+    if (existing && !existing.hidden) {
+      existing.hidden = true;
+      existing.innerHTML = "";
+      return;
+    }
+    openChildPick(article, index);
+  }
+
+  function onShareHeart(btn, article, index) {
+    var item = publicShareItems[index];
+    if (!item || !btn) return;
+    var key = shareKey(item);
+    if (heartedMap[key]) return;
+    if (btn.getAttribute("data-busy") === "1") return;
+    btn.setAttribute("data-busy", "1");
+    btn.disabled = true;
+    var url = PUBLIC_EXEC + "?action=heart&ageBand=" + encodeURIComponent(item.ageBand) +
+      "&kind=" + encodeURIComponent(item.kind) +
+      "&title=" + encodeURIComponent(item.title) +
+      "&t=" + Date.now();
+    fetch(url, { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("bad"); return r.json(); })
+      .then(function (data) {
+        if (!data || data.ok !== true || typeof data.hearts !== "number") throw new Error("bad");
+        heartedMap[key] = true;
+        saveHearted();
+        item.hearts = data.hearts;
+        btn.textContent = heartLabel(data.hearts, true);
+        btn.classList.add("hearted");
+        btn.setAttribute("aria-pressed", "true");
+        btn.disabled = false;
+        btn.removeAttribute("data-busy");
+      })
+      .catch(function () {
+        btn.disabled = false;
+        btn.removeAttribute("data-busy");
+        setShareStatus(article, "未能送出心意，請稍後再試。", true);
+      });
+  }
+
+  function initPublicShares() {
+    var host = $("share-list");
+    if (!host) return;
+    host.innerHTML = "<p class='empty'>正在讀取家長分享……</p>";
+    var url = PUBLIC_EXEC + "?action=list&t=" + Date.now();
+    fetch(url, { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error("bad"); return r.json(); })
+      .then(function (data) {
+        if (!data || data.ok === false || !Array.isArray(data.items)) throw new Error("bad");
+        publicShareItems = data.items.filter(function (item) {
+          return item && item.title && item.ageBand && item.kind;
+        });
+        renderPublicShares();
+      })
+      .catch(function () {
+        host.innerHTML = "<p class='empty'>暫時讀不到家長分享。請稍後再試。</p>";
+      });
   }
 
   function bind() {
+    on("wish-open", "click", function () {
+      var dlg = $("wish-dialog");
+      var status = $("wish-status");
+      if (status) { status.hidden = true; status.textContent = ""; status.classList.remove("is-error"); }
+      if (dlg && typeof dlg.showModal === "function") dlg.showModal();
+    });
+    on("wish-cancel", "click", function () {
+      var dlg = $("wish-dialog");
+      if (dlg && dlg.open) dlg.close();
+    });
+    on("wish-form", "submit", function (ev) {
+      ev.preventDefault();
+      var messageEl = $("wish-message");
+      var contactEl = $("wish-contact");
+      var status = $("wish-status");
+      var btn = $("wish-send");
+      var message = messageEl ? messageEl.value.trim().slice(0, 500) : "";
+      var contact = contactEl ? contactEl.value.trim().slice(0, 120) : "";
+      if (!message) {
+        if (status) {
+          status.hidden = false;
+          status.classList.add("is-error");
+          status.textContent = "未能送出，請稍後再試。";
+        }
+        return;
+      }
+      if (btn) btn.disabled = true;
+      var url = PUBLIC_EXEC + "?action=wish&message=" + encodeURIComponent(message) +
+        "&contact=" + encodeURIComponent(contact) + "&t=" + Date.now();
+      fetch(url, { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error("bad"); return r.json(); })
+        .then(function (data) {
+          if (!data || data.ok !== true) throw new Error("bad");
+          if (messageEl) messageEl.value = "";
+          if (contactEl) contactEl.value = "";
+          if (status) {
+            status.hidden = false;
+            status.classList.remove("is-error");
+            status.textContent = "已送出。";
+          }
+          if (btn) btn.disabled = false;
+        })
+        .catch(function () {
+          if (status) {
+            status.hidden = false;
+            status.classList.add("is-error");
+            status.textContent = "未能送出，請稍後再試。";
+          }
+          if (btn) btn.disabled = false;
+        });
+    });
     on("tab-public", "click", function () { setMode("public"); });
+
+    on("share-list", "click", function (ev) {
+      var plus = ev.target.closest("[data-share-plus]");
+      var heart = ev.target.closest("[data-share-heart]");
+      var childBtn = ev.target.closest("[data-share-child]");
+      var article = ev.target.closest(".share-item");
+      if (!article) return;
+      var index = parseInt(article.getAttribute("data-share-index"), 10);
+      if (plus) {
+        onSharePlus(article, index);
+        return;
+      }
+      if (heart) {
+        onShareHeart(heart, article, index);
+        return;
+      }
+      if (childBtn) {
+        var item = publicShareItems[index];
+        var child = childById(childBtn.getAttribute("data-share-child"));
+        if (!item || !child) {
+          setShareStatus(article, "找不到這位小孩。", true);
+          return;
+        }
+        copyShareToChild(item, child);
+        var pick = article.querySelector("[data-share-pick]");
+        if (pick) { pick.hidden = true; pick.innerHTML = ""; }
+        setShareStatus(article, "已記入「" + childLabel(child) + "」。", false);
+      }
+    });
     on("tab-private", "click", function () { setMode("private"); });
+
+    on("private-info", "click", function () {
+      var note = $("private-note");
+      var btn = $("private-info");
+      if (!note || !btn) return;
+      var open = note.hidden;
+      note.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    on("child-toggle", "click", function () {
+      var panel = $("child-settings");
+      var btn = $("child-toggle");
+      if (!panel || !btn) return;
+      var open = panel.hidden;
+      panel.hidden = !open;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+
+    on("log-child", "change", function () {
+      var sel = $("log-child");
+      if (!sel || !childById(sel.value)) return;
+      selectedChildId = sel.value;
+      refreshPersonButton();
+    });
 
     on("search", "input", function () {
       var search = $("search");
@@ -1088,7 +1437,7 @@
       if (!nameId) return;
       var child = childById(nameId);
       if (!child) return;
-      var normalized = input.value.trim().slice(0, 40) || "小朋友";
+      var normalized = input.value.trim().slice(0, 40) || "小孩";
       child.name = normalized;
       input.value = normalized;
       persistChildEdits();
@@ -1147,23 +1496,32 @@
     on("add-log", "submit", function (ev) {
       ev.preventDefault();
       if (!state.children.length) return;
-      var kind = normalizeContext($("log-context").value);
+      var kind = $("log-context").value;
       if (!learningKindById(kind)) {
-        alert("請先點選一種學習種類（例如電影、書或活動）。");
+        alert("請先點選一種種類（例如閱讀、影音或外遊）。");
+        var kindField = $("log-kind-field");
+        if (kindField) kindField.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;
       }
       var title = $("log-title").value.trim().slice(0, 120);
       if (!title) {
-        alert("請填寫名稱（例如電影、書或活動的標題）。");
+        alert("請填寫項目。");
         return;
       }
-      var child = childById($("log-child").value);
+      var dateValue = ($("log-date").value || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        alert("日期請用 yyyy-mm-dd。");
+        return;
+      }
+      ensureSelectedChild();
+      var chosenId = $("log-child").value || selectedChildId;
+      var child = childById(chosenId);
       var childAge = childAgeForNewLog(child);
       var ageBand = childAge !== "" ? numericAgeToBand(childAge) : "";
       state.logs.push({
         id: uid(),
-        childId: $("log-child").value,
-        date: $("log-date").value || todayISO(),
+        childId: chosenId,
+        date: dateValue,
         context: kind,
         title: title,
         childAge: childAge,
@@ -1218,13 +1576,13 @@
         try { data = JSON.parse(String(reader.result)); }
         catch (e) { alert("這個檔案不是可讀的 JSON。"); return; }
         if (!data || (!data.children && !data.logs && !data.personalCards)) {
-          alert("檔案裡沒有小朋友、紀錄或個人卡片。");
+          alert("檔案裡沒有小孩、紀錄或個人卡片。");
           return;
         }
         var mode = confirm("按「確定」：合併。保留現有資料，只加入檔案裡尚未存在的項目。\n按「取消」之後會再詢問是否取代。");
         if (mode) {
           mergeImport(data);
-        } else if (confirm("取代這部瀏覽器裡的全部私人資料？現有小朋友、紀錄及自行新增的卡片會被檔案覆蓋。內建資訊卡不受影響。")) {
+        } else if (confirm("取代這部瀏覽器裡的全部私人資料？現有小孩、紀錄及自行新增的卡片會被檔案覆蓋。內建資訊卡不受影響。")) {
           replaceImport(data);
         } else {
           return;
@@ -1249,8 +1607,9 @@
       renderTags();
       renderCards();
       renderChildren();
-      if (location.hash === "#records") setMode("private");
-      else setMode("public");
+      initPublicShares();
+      if (location.hash === "#info") setMode("public");
+      else setMode("private");
     });
   }
 
@@ -1262,6 +1621,8 @@
       bind();
       renderAges();
       renderChildren();
-      setMode("public");
+      initPublicShares();
+      if (location.hash === "#info") setMode("public");
+      else setMode("private");
     });
 })();

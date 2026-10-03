@@ -381,10 +381,18 @@ fieldset.ages legend { padding: 0 6px; font-size: 0.92rem; }
 }
 
 footer.site .credit {
-  margin-top: 10px;
+  margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
 }
+.credit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+.credit-row .credit { min-width: 0; }
 
 .private-head {
   display: flex;
@@ -414,6 +422,67 @@ button.icon-add {
   cursor: pointer;
 }
 button.icon-add:hover { background: var(--accent-dark); }
+.private-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+button.icon-info {
+  flex: none;
+  width: var(--tap);
+  min-height: var(--tap);
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+button.icon-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  max-width: 9.5rem;
+  min-height: var(--tap);
+  padding: 0 12px 0 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+button.icon-person svg { flex: none; }
+button.icon-person .person-name,
+button.icon-person #selected-child-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+button.icon-person[aria-expanded="true"] {
+  background: var(--ink);
+  color: #fffaf4;
+  border-color: var(--ink);
+}
+.row.two.log-meta-row:has(select[hidden]) {
+  grid-template-columns: 1fr;
+}
+#child-settings { margin-bottom: 8px; }
+
+button.icon-info[aria-expanded="true"] {
+  background: var(--ink);
+  color: #fffaf4;
+  border-color: var(--ink);
+}
 
 .child-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
 .child-row {
@@ -477,3 +546,107 @@ button.log-open {
   min-height: var(--tap);
   justify-content: center;
 }
+
+.share-week {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.share-week h2,
+.share-week h3 {
+  font-size: 1.15rem;
+  line-height: 1.35;
+  margin: 0 0 6px;
+}
+.share-lead {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.share-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.share-item:first-of-type { border-top: 0; padding-top: 4px; }
+.share-main { flex: 1 1 12rem; min-width: 0; }
+.share-title {
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.share-meta {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.share-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+button.share-btn {
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+button.share-btn.hearted {
+  background: #f8e4e0;
+  border-color: #e7c2b6;
+  color: var(--accent-dark);
+}
+.share-pick {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.share-pick-label {
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+.share-status {
+  width: 100%;
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--sage);
+}
+.share-status.is-error { color: var(--accent-dark); }
+@media (max-width: 520px) {
+  .share-actions { width: 100%; }
+  button.share-btn { flex: 1; }
+}
+
+button.wish-open {
+  flex: none;
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-dark);
+  font: inherit;
+  font-size: 0.92rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+dialog#wish-dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  width: min(480px, calc(100% - 28px));
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+dialog#wish-dialog::backdrop { background: rgba(42, 36, 30, 0.45); }
+dialog#wish-dialog h2 { font-size: 1.15rem; margin: 0 0 10px; }
+.wish-status { margin: 8px 0 0; color: var(--sage); font-size: 0.9rem; }
+.wish-status.is-error { color: var(--accent-dark); }
