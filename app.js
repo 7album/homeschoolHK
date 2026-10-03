@@ -61,8 +61,8 @@
     return {
       version: 1,
       children: [
-        { id: "child-older", name: "姐姐", note: "約兩歲半（以2026年10月計）。請改為實際出生月份。" },
-        { id: "child-younger", name: "妹妹", note: "約一歲（以2026年10月計）。請改為實際出生月份。" }
+        { id: "child-older", name: "姐姐", note: "請改為實際出生月份或備註。" },
+        { id: "child-younger", name: "妹妹", note: "請改為實際出生月份或備註。" }
       ],
       logs: [],
       personalCards: []
@@ -273,16 +273,10 @@
     }).join("") + "</ul>";
   }
 
-  function ageLine(ages) {
-    if (!ages || !ages.length) return "";
-    return "<div class='age-line'><span class='chip-label'>年齡</span>" +
-      ages.map(function (a) { return "<span class='tag age'>" + esc(a) + "</span>"; }).join("") +
-      "</div>";
-  }
-
-  function topicLine(tags, extra) {
-    var chips = extra || "";
+  function chipRow(ages, tags, extra) {
+    var chips = (ages || []).map(function (a) { return "<span class='tag age'>" + esc(a) + "</span>"; }).join("");
     chips += (tags || []).map(function (t) { return "<span class='tag'>" + esc(t) + "</span>"; }).join("");
+    chips += extra || "";
     if (!chips) return "";
     return "<div class='meta'>" + chips + "</div>";
   }
@@ -290,8 +284,7 @@
   function renderSeedCard(card) {
     var paras = (card.paragraphs || []).map(function (p) { return "<p>" + esc(p) + "</p>"; }).join("");
     return "<article class='card'>" +
-      ageLine(card.ages) +
-      topicLine(card.tags) +
+      chipRow(card.ages, card.tags) +
       "<h2>" + esc(card.title) + "</h2>" +
       paras +
       sourceList(card.sources) +
@@ -302,8 +295,7 @@
     var href = safeUrl(card.url);
     var link = href ? "<p><a href='" + esc(href) + "' rel='noopener noreferrer'>" + esc(href) + "</a></p>" : "";
     return "<article class='card' data-id='" + esc(card.id) + "'>" +
-      ageLine(card.ages) +
-      topicLine(card.tags, "<span class='badge mine'>自行新增 · 只在這部瀏覽器</span>") +
+      chipRow(card.ages, card.tags, "<span class='badge mine'>自行新增 · 只在這部瀏覽器</span>") +
       "<h2>" + esc(card.title) + "</h2>" +
       "<p>" + esc(card.summary || "") + "</p>" +
       link +
