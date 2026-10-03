@@ -124,10 +124,16 @@
               <select id="log-child" required></select>
             </label>
           </div>
-          <div class="row three">
-            <label class="field" for="log-context">哪一種日常
-              <select id="log-context" required></select>
-            </label>
+          <div class="field">
+            <span class="chip-label" id="log-area-label">範圍</span>
+            <div id="log-area-pick" class="kind-row" role="group" aria-labelledby="log-area-label"></div>
+          </div>
+          <div class="field">
+            <span class="chip-label" id="log-kind-label">具體種類（必選一項）</span>
+            <div id="log-kind-pick" class="kind-row" role="group" aria-labelledby="log-kind-label"></div>
+            <input type="hidden" id="log-context" name="log-context" value="">
+          </div>
+          <div class="row two">
             <label class="field" for="log-intensity">程度（可留空）
               <select id="log-intensity"></select>
             </label>
@@ -143,9 +149,14 @@
 
         <section class="box" aria-labelledby="summary-title">
           <h2 id="summary-title">最近 14 日</h2>
-          <label class="field" for="summary-child">查看哪一位
-            <select id="summary-child"></select>
-          </label>
+          <div class="row two">
+            <label class="field" for="summary-child">查看哪一位
+              <select id="summary-child"></select>
+            </label>
+            <label class="field" for="summary-area">查看哪一個範圍
+              <select id="summary-area"></select>
+            </label>
+          </div>
           <div id="summary"></div>
         </section>
 
@@ -154,7 +165,7 @@
           <label class="field" for="filter-child">小朋友
             <select id="filter-child"></select>
           </label>
-          <label class="field" for="filter-context">日常
+          <label class="field" for="filter-context">具體種類
             <select id="filter-context">
               <option value="all">全部</option>
             </select>
