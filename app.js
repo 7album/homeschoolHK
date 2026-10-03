@@ -205,24 +205,64 @@
     return {
       version: 1,
       children: [
-        { id: uid(), name: "姐姐", age: "", note: "" },
-        { id: uid(), name: "妹妹", age: "", note: "" }
+        { id: uid(), name: "小朋友", birthYm: "", legacyAge: "", note: "" }
       ],
       logs: [],
       personalCards: []
     };
   }
 
-  function parseChildAge(source) {
-    if (!source) return "";
-    if (typeof source.age === "number" && source.age >= 0 && source.age <= 99 && Number.isFinite(source.age)) {
-      return Math.floor(source.age);
+  function parseBirthYm(value) {
+    if (value == null || value === "") return "";
+    var v = String(value).trim();
+    var m = v.match(/^(\d{4})-(\d{1,2})$/);
+    if (!m) return "";
+    var y = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    if (!Number.isFinite(y) || !Number.isFinite(mo) || y < 1900 || y > 2100 || mo < 1 || mo > 12) return "";
+    return String(y) + "-" + String(mo).padStart(2, "0");
+  }
+
+  function parseLegacyAgeValue(value) {
+    if (value == null || value === "") return "";
+    if (typeof value === "number" && value >= 0 && value <= 99 && Number.isFinite(value)) {
+      return Math.floor(value);
     }
-    if (source.age !== undefined && source.age !== null && source.age !== "") {
-      var n = parseInt(String(source.age).trim(), 10);
-      if (!isNaN(n) && n >= 0 && n <= 99) return n;
-    }
+    var n = parseInt(String(value).trim(), 10);
+    if (!isNaN(n) && n >= 0 && n <= 99) return n;
     return "";
+  }
+
+  function parseLegacyAge(source) {
+    if (!source) return "";
+    var fromField = parseLegacyAgeValue(source.legacyAge);
+    if (fromField !== "") return fromField;
+    if (parseBirthYm(source.birthYm || source.birthMonth)) return "";
+    return parseLegacyAgeValue(source.age);
+  }
+
+  function ageFromBirthYm(birthYm, refDate) {
+    var ym = parseBirthYm(birthYm);
+    if (!ym) return "";
+    var parts = ym.split("-");
+    var birthYear = parseInt(parts[0], 10);
+    var birthMonth = parseInt(parts[1], 10);
+    var now = refDate || new Date();
+    var nowYear = now.getFullYear();
+    var nowMonth = now.getMonth() + 1;
+    if (nowYear < birthYear || (nowYear === birthYear && nowMonth < birthMonth)) return 0;
+    var age = nowYear - birthYear;
+    if (nowMonth < birthMonth) age -= 1;
+    if (age < 0) age = 0;
+    if (age > 99) age = 99;
+    return age;
+  }
+
+  function childAgeForNewLog(child) {
+    if (!child) return "";
+    var birth = parseBirthYm(child.birthYm);
+    if (birth) return ageFromBirthYm(birth);
+    return parseLegacyAge(child);
   }
 
   function parseLogChildAge(log) {
@@ -262,16 +302,19 @@
 
   function normalizeChild(raw) {
     if (typeof raw === "string") {
-      return { id: uid(), name: String(raw).trim().slice(0, 40) || "小朋友", age: "", note: "" };
+      return { id: uid(), name: String(raw).trim().slice(0, 40) || "小朋友", birthYm: "", legacyAge: "", note: "" };
     }
     var c = raw || {};
     var id = String(c.id || "").trim();
     if (!id) id = uid();
     var name = String(c.name || "小朋友").trim().slice(0, 40) || "小朋友";
+    var birthYm = parseBirthYm(c.birthYm || c.birthMonth);
+    var legacyAge = birthYm ? parseLegacyAgeValue(c.legacyAge) : parseLegacyAge(c);
     return {
       id: id,
       name: name,
-      age: parseChildAge(c),
+      birthYm: birthYm,
+      legacyAge: legacyAge,
       note: String(c.note || "").slice(0, 240)
     };
   }
@@ -297,7 +340,7 @@
         log.childId = byName.id;
         return;
       }
-      var created = normalizeChild({ id: uid(), name: cid.slice(0, 40), age: "", note: "" });
+      var created = normalizeChild({ id: uid(), name: cid.slice(0, 40), birthYm: "", legacyAge: "", note: "" });
       out.push(created);
       byId[created.id] = created;
       log.childId = created.id;
@@ -669,11 +712,16 @@
       host.innerHTML = "<p class='empty'>尚未有小朋友。可按標題旁 + 或「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
     } else {
       host.innerHTML = state.children.map(function (c) {
-        var ageVal = c.age === "" || c.age == null ? "" : String(c.age);
+        var birthVal = parseBirthYm(c.birthYm) || "";
+        var legacy = parseLegacyAge(c);
+        var hint = !birthVal && legacy !== ""
+          ? "<p class='legacy-age-hint'>舊年齡為 " + esc(String(legacy)) + " 歲，請設定出生年月</p>"
+          : "";
         return "<div class='child-row' data-child-row='" + esc(c.id) + "'>" +
           "<label class='field-inline'><span>稱謂</span><input data-child-name='" + esc(c.id) + "' type='text' value='" + esc(c.name) + "' maxlength='40' placeholder='例如：姐姐' autocomplete='off'></label>" +
-          "<label class='field-inline'><span>年齡</span><input data-child-age='" + esc(c.id) + "' type='number' min='0' max='99' inputmode='numeric' placeholder='歲' value='" + esc(ageVal) + "'></label>" +
+          "<label class='field-inline'><span>出生年月</span><input data-child-birth='" + esc(c.id) + "' type='month' value='" + esc(birthVal) + "'></label>" +
           "<button type='button' class='child-remove' data-del-child='" + esc(c.id) + "' aria-label='移除「" + esc(c.name) + "」'>❌</button>" +
+          hint +
           "</div>";
       }).join("");
     }
@@ -973,7 +1021,7 @@
   }
 
   function addChildRow() {
-    state.children.push(normalizeChild({ id: uid(), name: "小朋友", age: "", note: "" }));
+    state.children.push(normalizeChild({ id: uid(), name: "小朋友", birthYm: "", legacyAge: "", note: "" }));
     save();
     renderChildren();
     var list = $("child-list");
@@ -1046,22 +1094,15 @@
       persistChildEdits();
     }
 
-    function onChildAgeChange(ev) {
-      var ageId = ev.target.getAttribute("data-child-age");
-      if (!ageId) return;
-      var child = childById(ageId);
+    function onChildBirthChange(ev) {
+      var birthId = ev.target.getAttribute("data-child-birth");
+      if (!birthId) return;
+      var child = childById(birthId);
       if (!child) return;
-      var raw = ev.target.value.trim();
-      if (!raw) {
-        child.age = "";
-      } else {
-        var n = parseInt(raw, 10);
-        if (!isNaN(n) && n >= 0 && n <= 99) {
-          child.age = n;
-          if (String(n) !== raw) ev.target.value = String(n);
-        }
-      }
-      persistChildEdits();
+      child.birthYm = parseBirthYm(ev.target.value) || "";
+      if (!child.birthYm) ev.target.value = "";
+      save();
+      renderChildren();
     }
 
     on("child-list", "input", function (ev) {
@@ -1069,7 +1110,7 @@
     });
     on("child-list", "change", function (ev) {
       if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
-      else if (ev.target.getAttribute("data-child-age")) onChildAgeChange(ev);
+      else if (ev.target.getAttribute("data-child-birth")) onChildBirthChange(ev);
     });
     on("child-list", "blur", function (ev) {
       if (ev.target.getAttribute("data-child-name")) commitChildNameField(ev.target);
@@ -1117,7 +1158,7 @@
         return;
       }
       var child = childById($("log-child").value);
-      var childAge = child ? parseChildAge(child) : "";
+      var childAge = childAgeForNewLog(child);
       var ageBand = childAge !== "" ? numericAgeToBand(childAge) : "";
       state.logs.push({
         id: uid(),
