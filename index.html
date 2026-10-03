@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="供香港在家教育及幼兒家長使用：社區資訊已公開查證；小朋友的日常紀錄只留在這部瀏覽器。">
+  <title>家裡學 HK</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到內容</a>
+  <div class="wrap">
+    <header class="site">
+      <div class="mark">
+        <svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true">
+          <rect width="46" height="46" rx="14" fill="#2a241e"/>
+          <path d="M12 30c4-8 8-12 11-12s7 4 11 12" fill="none" stroke="#f3eee6" stroke-width="2.4" stroke-linecap="round"/>
+          <circle cx="23" cy="16" r="3" fill="#e7b089"/>
+        </svg>
+        <div>
+          <h1>家裡學 HK</h1>
+          <p class="by">供香港在家教育及幼兒家長使用</p>
+        </div>
+      </div>
+      <p class="lede">兩個範圍，分開使用。上方是可以一併查閱的資料；下方是子女的日常紀錄，只儲存在目前使用的瀏覽器。</p>
+    </header>
+
+    <nav class="tabs" aria-label="兩個範圍">
+      <button type="button" id="tab-public" role="tab" aria-selected="true" aria-controls="panel-public">
+        社區資訊
+        <small>公開、有來源</small>
+      </button>
+      <button type="button" id="tab-private" role="tab" aria-selected="false" aria-controls="panel-private">
+        家裡紀錄
+        <small>只在這部裝置</small>
+      </button>
+    </nav>
+
+    <main id="main">
+      <section id="panel-public" role="tabpanel" aria-labelledby="tab-public">
+        <div class="note">
+          <p><strong>此頁資訊由 AI 整理，更新日期是 2026-10-03。</strong>未能查證的內容並未寫入，包括一套「在家教育登記」的逐步程序。</p>
+          <p>本頁不是教育局網站，亦不是法律意見。政策可能更改，請再打開卡片上的連結核對。</p>
+        </div>
+
+        <div class="tools">
+          <label class="field" for="search">搜尋標題、內文、標籤、年齡或來源
+            <input id="search" type="search" placeholder="例如：幼稚園、6歲、說話、社署" autocomplete="off">
+          </label>
+          <div class="filter-block">
+            <p class="chip-label" id="age-filter-label">年齡</p>
+            <div class="chips" id="age-list" role="group" aria-labelledby="age-filter-label"></div>
+          </div>
+          <div class="filter-block">
+            <p class="chip-label" id="topic-filter-label">主題</p>
+            <div class="chips" id="tag-list" role="group" aria-labelledby="topic-filter-label"></div>
+          </div>
+          <p class="intensity" id="card-count-line">顯示 <span id="card-count">0</span> 張</p>
+        </div>
+
+        <div id="card-list" aria-live="polite"></div>
+
+        <form class="box" id="add-card">
+          <h2>新增一張個人資料卡</h2>
+          <p>只儲存在這部瀏覽器，不會上傳。內建卡片（附有官方或社區來源者）不能在此修改。</p>
+          <label class="field" for="card-title">標題
+            <input id="card-title" name="title" type="text" maxlength="80" required>
+          </label>
+          <label class="field" for="card-summary">摘要
+            <textarea id="card-summary" name="summary" maxlength="2000" required></textarea>
+          </label>
+          <label class="field" for="card-url">來源網址（可留空）
+            <input id="card-url" name="url" type="url" inputmode="url" placeholder="https://">
+          </label>
+          <label class="field" for="card-tags">標籤，以逗號分隔
+            <input id="card-tags" name="tags" type="text" placeholder="例如：社區、沙田">
+          </label>
+          <fieldset class="ages">
+            <legend>年齡（可不選，可多選）</legend>
+            <div class="checks">
+              <label><input type="checkbox" name="age" value="0–6"> 0–6</label>
+              <label><input type="checkbox" name="age" value="6–12"> 6–12</label>
+              <label><input type="checkbox" name="age" value="12–18"> 12–18</label>
+              <label><input type="checkbox" name="age" value=">18"> &gt;18</label>
+            </div>
+          </fieldset>
+          <div class="actions">
+            <button class="primary" type="submit">儲存到這部瀏覽器</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="panel-private" role="tabpanel" aria-labelledby="tab-private" hidden>
+        <div class="note private-note">
+          <p><strong>這是家長日記，不是診斷，不是病歷，不是評估報告。</strong></p>
+          <p>小朋友、日常紀錄，以及自行新增的資訊卡，都只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。</p>
+          <p>若對健康、聽覺或發展有疑慮，請向母嬰健康院、家庭醫生或兒科醫生查詢。本頁不能代替他們。</p>
+        </div>
+
+        <h2>小朋友</h2>
+        <div id="child-list"></div>
+        <form class="box" id="add-child">
+          <h2>新增一位</h2>
+          <div class="row two">
+            <label class="field" for="new-child-name">稱呼
+              <input id="new-child-name" type="text" maxlength="40" required placeholder="例如：姐姐">
+            </label>
+            <label class="field" for="new-child-note">年齡或出生備註
+              <input id="new-child-note" type="text" maxlength="240" placeholder="例如：2024年4月">
+            </label>
+          </div>
+          <div class="actions"><button class="primary" type="submit">加入</button></div>
+        </form>
+
+        <form class="box" id="add-log">
+          <h2>記下一件日常</h2>
+          <div class="row two">
+            <label class="field" for="log-date">日期
+              <input id="log-date" type="date" required>
+            </label>
+            <label class="field" for="log-child">小朋友
+              <select id="log-child" required></select>
+            </label>
+          </div>
+          <div class="row three">
+            <label class="field" for="log-context">哪一種日常
+              <select id="log-context" required></select>
+            </label>
+            <label class="field" for="log-intensity">程度（可留空）
+              <select id="log-intensity"></select>
+            </label>
+            <label class="field" for="log-mins">大約多少分鐘（可留空）
+              <input id="log-mins" type="number" min="1" max="999" inputmode="numeric" placeholder="可留空">
+            </label>
+          </div>
+          <label class="field" for="log-note">短句
+            <textarea id="log-note" maxlength="2000" placeholder="例如：在公園追逐了一會，其後自己坐下看樹。"></textarea>
+          </label>
+          <div class="actions"><button class="primary" type="submit">記下</button></div>
+        </form>
+
+        <section class="box" aria-labelledby="summary-title">
+          <h2 id="summary-title">最近 14 日</h2>
+          <label class="field" for="summary-child">查看哪一位
+            <select id="summary-child"></select>
+          </label>
+          <div id="summary"></div>
+        </section>
+
+        <h2>近期紀錄</h2>
+        <div class="row two">
+          <label class="field" for="filter-child">小朋友
+            <select id="filter-child"></select>
+          </label>
+          <label class="field" for="filter-context">日常
+            <select id="filter-context">
+              <option value="all">全部</option>
+            </select>
+          </label>
+        </div>
+        <p class="intensity">符合的紀錄：<span id="log-count">0</span></p>
+        <div id="log-list" aria-live="polite"></div>
+        <div class="actions"><button type="button" class="ghost" id="more-logs" hidden>再顯示 20 則</button></div>
+
+        <section class="box" aria-labelledby="backup-title">
+          <h2 id="backup-title">備份</h2>
+          <p>匯出的 JSON 包括：小朋友、日常紀錄、自行新增的資訊卡。不包括本頁內建的公開卡片。</p>
+          <div class="actions">
+            <button type="button" class="primary" id="export-btn">匯出 JSON</button>
+            <button type="button" class="ghost" id="import-btn">匯入 JSON</button>
+          </div>
+          <input id="import-file" class="hidden-file" type="file" accept="application/json,.json">
+        </section>
+      </section>
+    </main>
+
+    <footer class="site">
+      <p>家裡學 HK 沒有追蹤、沒有帳戶。公開卡片的來源列於每張卡片下方，完整清單見 README。</p>
+      <p class="credit">Created with ❤️ &amp; 🤖 by hk7math</p>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
