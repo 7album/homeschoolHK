@@ -709,7 +709,7 @@
   function renderChildren() {
     var host = $("child-list");
     if (!state.children.length) {
-      host.innerHTML = "<p class='empty'>尚未有小朋友。可按標題旁 + 或「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
+      host.innerHTML = "<p class='empty'>尚未有小朋友。可按「+ 小朋友」加入。紀錄仍然只留在這部瀏覽器。</p>";
     } else {
       host.innerHTML = state.children.map(function (c) {
         var birthVal = parseBirthYm(c.birthYm) || "";
@@ -1129,7 +1129,7 @@
       renderChildren();
     });
 
-    on("add-child-head", "click", addChildRow);
+    on("add-child-head", "click", openAddLogForm);
     on("add-child-btn", "click", addChildRow);
     on("open-add-log", "click", openAddLogForm);
 
