@@ -618,20 +618,15 @@
       "```"
     ].join("\n");
     var hint = $("suggest-card-hint");
-    var openEditor = function () {
-      window.open(githubNewFileUrl(form.filePath), "_blank", "noopener,noreferrer");
-    };
+    hint.hidden = false;
+    window.open(githubNewFileUrl(form.filePath), "_blank", "noopener,noreferrer");
     copyText(jsonText).then(function () {
-      hint.hidden = false;
       hint.textContent = "已複製 JSON。請在 GitHub 編輯器貼上內容，提交到新分支後開立拉取請求；並在 cards/community-index.json 加入此檔路徑（見 README）。檔案：" + form.filePath;
-      openEditor();
     }).catch(function () {
-      hint.hidden = false;
       hint.textContent = "無法自動複製，請手動複製以下 JSON 後在 GitHub 貼上。檔案：" + form.filePath;
       try {
         window.prompt("請複製以下 JSON，再在 GitHub 編輯器貼上：", jsonText);
       } catch (e) {}
-      openEditor();
     });
     try {
       sessionStorage.setItem("homeschool-hk-last-suggest-pr-body", prBody);
