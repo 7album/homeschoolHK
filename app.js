@@ -1749,55 +1749,8 @@
 
   function bind() {
     on("wish-open", "click", function () {
-      var dlg = $("wish-dialog");
-      var status = $("wish-status");
-      if (status) { status.hidden = true; status.textContent = ""; status.classList.remove("is-error"); }
-      if (dlg && typeof dlg.showModal === "function") dlg.showModal();
-    });
-    on("wish-cancel", "click", function () {
-      var dlg = $("wish-dialog");
-      if (dlg && dlg.open) dlg.close();
-    });
-    on("wish-form", "submit", function (ev) {
-      ev.preventDefault();
-      var messageEl = $("wish-message");
-      var contactEl = $("wish-contact");
-      var status = $("wish-status");
-      var btn = $("wish-send");
-      var message = messageEl ? messageEl.value.trim().slice(0, 500) : "";
-      var contact = contactEl ? contactEl.value.trim().slice(0, 120) : "";
-      if (!message) {
-        if (status) {
-          status.hidden = false;
-          status.classList.add("is-error");
-          status.textContent = "未能送出，請稍後再試。";
-        }
-        return;
-      }
-      if (btn) btn.disabled = true;
-      var url = PUBLIC_EXEC + "?action=wish&message=" + encodeURIComponent(message) +
-        "&contact=" + encodeURIComponent(contact) + "&t=" + Date.now();
-      fetch(url, { cache: "no-store" })
-        .then(function (r) { if (!r.ok) throw new Error("bad"); return r.json(); })
-        .then(function (data) {
-          if (!data || data.ok !== true) throw new Error("bad");
-          if (messageEl) messageEl.value = "";
-          if (contactEl) contactEl.value = "";
-          if (status) {
-            status.hidden = false;
-            status.classList.remove("is-error");
-            status.textContent = "已送出。";
-          }
-          if (btn) btn.disabled = false;
-        })
-        .catch(function () {
-          if (status) {
-            status.hidden = false;
-            status.classList.add("is-error");
-            status.textContent = "未能送出，請稍後再試。";
-          }
-          if (btn) btn.disabled = false;
-        });
+      var issueBody = "Please describe your wish here.\n\nWish:\n";
+      window.open(githubNewIssueUrl("Wish", issueBody), "_blank", "noopener,noreferrer");
     });
     on("tab-public", "click", function () { setMode("public"); });
 
