@@ -35,8 +35,11 @@
     { id: "strong", label: "明顯" }
   ];
   var AGE_BANDS = ["0–6", "6–12", "12–18", ">18"];
+  var GITHUB_REPO = "7album/homeschoolHK";
+  var GITHUB_BRANCH = "main";
 
   var seed = [];
+  var communityCards = [];
   var activeTopics = [];
   var activeAges = [];
   var query = "";
@@ -187,6 +190,7 @@
   function allTags() {
     var map = {};
     seed.forEach(function (c) { (c.tags || []).forEach(function (t) { map[t] = true; }); });
+    communityCards.forEach(function (c) { (c.tags || []).forEach(function (t) { map[t] = true; }); });
     state.personalCards.forEach(function (c) { (c.tags || []).forEach(function (t) { map[t] = true; }); });
     return Object.keys(map);
   }
@@ -303,18 +307,35 @@
       "</article>";
   }
 
+  function renderCommunityCard(card) {
+    var href = safeUrl(card.url);
+    var link = href ? "<p><a href='" + esc(href) + "' rel='noopener noreferrer'>" + esc(href) + "</a></p>" : "";
+    return "<article class='card' data-community-id='" + esc(card.id) + "'>" +
+      chipRow(card.ages, card.tags, "<span class='badge'>社區建議 · 已公開</span>") +
+      "<h2>" + esc(card.title) + "</h2>" +
+      "<p>" + esc(card.summary || "") + "</p>" +
+      link +
+      "</article>";
+  }
+
   function renderCards() {
     var personal = state.personalCards
       .slice()
       .sort(function (a, b) { return String(b.addedAt).localeCompare(String(a.addedAt)); })
       .filter(cardMatches);
+    var community = communityCards
+      .slice()
+      .sort(function (a, b) { return String(b.submittedAt || "").localeCompare(String(a.submittedAt || "")); })
+      .filter(cardMatches);
     var official = seed
       .slice()
       .sort(function (a, b) { return (a.rank || 99) - (b.rank || 99); })
       .filter(cardMatches);
-    var html = personal.map(renderPersonalCard).join("") + official.map(renderSeedCard).join("");
+    var html = personal.map(renderPersonalCard).join("") +
+      community.map(renderCommunityCard).join("") +
+      official.map(renderSeedCard).join("");
     $("card-list").innerHTML = html || "<p class='empty'>沒有符合的卡片。可改用其他字詞，或取消年齡與主題篩選再試。</p>";
-    $("card-count").textContent = String(personal.length + official.length);
+    $("card-count").textContent = String(personal.length + community.length + official.length);
   }
 
   function fillSelect(select, items, placeholder) {
@@ -505,6 +526,135 @@
     };
   }
 
+  function normalizeCommunityCard(raw) {
+    if (!raw || !raw.title) return null;
+    var tags = Array.isArray(raw.tags) ? raw.tags.map(function (t) { return String(t).trim(); }).filter(Boolean).slice(0, 8) : [];
+    return {
+      id: String(raw.id || uid()),
+      title: String(raw.title).slice(0, 80),
+      summary: String(raw.summary || "").slice(0, 2000),
+      url: safeUrl(raw.url || ""),
+      tags: tags,
+      ages: cleanAges(raw.ages),
+      submittedAt: raw.submittedAt || ""
+    };
+  }
+
+  function readSuggestForm() {
+    var title = $("card-title").value.trim();
+    var summary = $("card-summary").value.trim();
+    if (!title || !summary) return null;
+    var tags = $("card-tags").value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean).slice(0, 8);
+    var ages = [];
+    var boxes = $("add-card").querySelectorAll("input[name='age']");
+    for (var i = 0; i < boxes.length; i++) {
+      if (boxes[i].checked) ages.push(boxes[i].value);
+    }
+    var shortId = uid();
+    var cardId = "community-" + shortId;
+    var filePath = "cards/" + cardId + ".json";
+    var payload = {
+      id: cardId,
+      title: title.slice(0, 80),
+      summary: summary.slice(0, 2000),
+      url: safeUrl($("card-url").value),
+      tags: tags,
+      ages: cleanAges(ages),
+      submittedAt: new Date().toISOString().slice(0, 10)
+    };
+    return { payload: payload, filePath: filePath, cardId: cardId };
+  }
+
+  function githubNewFileUrl(filePath) {
+    return "https://github.com/" + GITHUB_REPO + "/new/" + GITHUB_BRANCH + "/" + filePath;
+  }
+
+  function githubEditIndexUrl() {
+    return "https://github.com/" + GITHUB_REPO + "/edit/" + GITHUB_BRANCH + "/cards/community-index.json";
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand("copy");
+        ta.remove();
+        if (ok) resolve();
+        else reject(new Error("copy failed"));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  function openCommunitySuggest() {
+    var form = readSuggestForm();
+    if (!form) return;
+    var jsonText = JSON.stringify(form.payload, null, 2) + "\n";
+    var indexLine = '    "' + form.filePath + '"';
+    var prBody = [
+      "## 社區資訊卡建議",
+      "",
+      "請維護者合併前核對內容與來源。",
+      "",
+      "1. 新增檔案 `" + form.filePath + "`（內容見下方 JSON）。",
+      "2. 在 `cards/community-index.json` 的 `files` 陣列加入一行：",
+      "```json",
+      indexLine,
+      "```",
+      "",
+      "### 卡片 JSON",
+      "```json",
+      jsonText.trim(),
+      "```"
+    ].join("\n");
+    var hint = $("suggest-card-hint");
+    var openEditor = function () {
+      window.open(githubNewFileUrl(form.filePath), "_blank", "noopener,noreferrer");
+    };
+    copyText(jsonText).then(function () {
+      hint.hidden = false;
+      hint.textContent = "已複製 JSON。請在 GitHub 編輯器貼上內容，提交到新分支後開立拉取請求；並在 cards/community-index.json 加入此檔路徑（見 README）。檔案：" + form.filePath;
+      openEditor();
+    }).catch(function () {
+      hint.hidden = false;
+      hint.textContent = "無法自動複製，請手動複製以下 JSON 後在 GitHub 貼上。檔案：" + form.filePath;
+      try {
+        window.prompt("請複製以下 JSON，再在 GitHub 編輯器貼上：", jsonText);
+      } catch (e) {}
+      openEditor();
+    });
+    try {
+      sessionStorage.setItem("homeschool-hk-last-suggest-pr-body", prBody);
+    } catch (e) {}
+  }
+
+  function loadCommunityCards(files) {
+    if (!files || !files.length) return Promise.resolve([]);
+    return Promise.all(files.map(function (path) {
+      return fetch(path, { cache: "no-store" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; });
+    })).then(function (items) {
+      return items.map(normalizeCommunityCard).filter(Boolean);
+    });
+  }
+
+  function loadCommunityIndex() {
+    return fetch("cards/community-index.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : { files: [] }; })
+      .catch(function () { return { files: [] }; });
+  }
+
   function replaceImport(data) {
     state.children = (data.children || []).filter(Boolean).map(function (c) {
       return { id: String(c.id || uid()), name: String(c.name || "小朋友").slice(0, 40), note: String(c.note || "").slice(0, 240) };
@@ -524,28 +674,7 @@
 
     $("add-card").addEventListener("submit", function (ev) {
       ev.preventDefault();
-      var title = $("card-title").value.trim();
-      var summary = $("card-summary").value.trim();
-      if (!title || !summary) return;
-      var tags = $("card-tags").value.split(/[,，]/).map(function (t) { return t.trim(); }).filter(Boolean).slice(0, 8);
-      var ages = [];
-      var boxes = $("add-card").querySelectorAll("input[name='age']");
-      for (var i = 0; i < boxes.length; i++) {
-        if (boxes[i].checked) ages.push(boxes[i].value);
-      }
-      state.personalCards.push({
-        id: uid(),
-        title: title.slice(0, 80),
-        summary: summary.slice(0, 2000),
-        url: safeUrl($("card-url").value),
-        tags: tags,
-        ages: cleanAges(ages),
-        addedAt: new Date().toISOString()
-      });
-      save();
-      $("add-card").reset();
-      renderTags();
-      renderCards();
+      openCommunitySuggest();
     });
 
     $("card-list").addEventListener("click", function (ev) {
@@ -697,13 +826,18 @@
 
   function start(data) {
     seed = (data && data.cards) || [];
-    bind();
-    renderAges();
-    renderTags();
-    renderCards();
-    renderChildren();
-    if (location.hash === "#records") setMode("private");
-    else setMode("public");
+    loadCommunityIndex().then(function (index) {
+      return loadCommunityCards((index && index.files) || []);
+    }).then(function (cards) {
+      communityCards = cards;
+      bind();
+      renderAges();
+      renderTags();
+      renderCards();
+      renderChildren();
+      if (location.hash === "#records") setMode("private");
+      else setMode("public");
+    });
   }
 
   fetch("cards.json", { cache: "no-store" })

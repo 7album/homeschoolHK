@@ -61,8 +61,9 @@
         <div id="card-list" aria-live="polite"></div>
 
         <form class="box" id="add-card">
-          <h2>新增一張個人資料卡</h2>
-          <p>只儲存在這部瀏覽器，不會上傳。內建卡片（附有官方或社區來源者）不能在此修改。</p>
+          <h2>向社區清單建議一張資訊卡</h2>
+          <p>此表單<strong>不會</strong>把內容存進這部瀏覽器。按下按鈕後會開啟 GitHub 官方「新增檔案」頁面，請在該頁貼上已複製的 JSON、建立分支並開立拉取請求；維護者合併後，卡片才會出現在上方清單，<strong>對所有訪客公開</strong>。內建卡片不能在此修改。</p>
+          <p class="intensity">家裡紀錄（小朋友與日常）仍只留在這部瀏覽器的 localStorage，與此建議無關。</p>
           <label class="field" for="card-title">標題
             <input id="card-title" name="title" type="text" maxlength="80" required>
           </label>
@@ -85,15 +86,16 @@
             </div>
           </fieldset>
           <div class="actions">
-            <button class="primary" type="submit">儲存到這部瀏覽器</button>
+            <button class="primary" type="submit" id="suggest-card-btn">在 GitHub 開立拉取請求（JSON 已複製，請貼到編輯器）</button>
           </div>
+          <p class="intensity" id="suggest-card-hint" hidden></p>
         </form>
       </section>
 
       <section id="panel-private" role="tabpanel" aria-labelledby="tab-private" hidden>
         <div class="note private-note">
           <p><strong>這是家長日記，不是診斷，不是病歷，不是評估報告。</strong></p>
-          <p>小朋友、日常紀錄，以及自行新增的資訊卡，都只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。</p>
+          <p>小朋友與日常紀錄只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
           <p>若對健康、聽覺或發展有疑慮，請向母嬰健康院、家庭醫生或兒科醫生查詢。本頁不能代替他們。</p>
         </div>
 
