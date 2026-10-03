@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="供香港在家教育及幼兒家長使用：社區資訊已公開查證；家長學習日記只留在這部瀏覽器。">
   <title>家裡學 HK</title>
-  <link rel="stylesheet" href="styles.css?v=20261004-5">
+  <link rel="stylesheet" href="styles.css?v=20261004-13">
 </head>
 <body class="mode-private">
   <a class="skip" href="#main">跳到內容</a>
@@ -100,13 +100,13 @@
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="currentColor"/><path d="M5.5 19.2c1.2-3.2 3.4-4.7 6.5-4.7s5.3 1.5 6.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
               <span id="selected-child-name">小孩</span>
             </button>
-            <button type="button" class="icon-add" id="add-child-head" aria-label="記下一項學習或活動" title="記下一項學習或活動">+</button>
+            <button type="button" class="icon-add" id="add-child-head" aria-label="記錄一項學習或活動" title="記錄一項學習或活動">+</button>
           </div>
         </div>
 
         <div class="note private-note" id="private-note" hidden>
           <p><strong>這是家長日記，不是診斷，不是病歷，不是評估報告。</strong></p>
-          <p>小孩與學習日記只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳，亦不會與其他家庭分享。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
+          <p>小孩與學習日記預設只存在這個瀏覽器的 localStorage。沒有帳戶。按「同步」並確認後，紀錄才會上傳，供持有相同同步碼的家長在同時開着頁面時合併；不會公開給其他家庭。清除網站資料、更換瀏覽器或更換電話後，若沒有匯出或同步，紀錄便會消失。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
           <p>若對健康、聽覺或發展有疑慮，請向母嬰健康院、家庭醫生或兒科醫生查詢。本頁不能代替他們。</p>
         </div>
 
@@ -119,11 +119,11 @@
         </div>
 
         <div class="log-open-wrap">
-          <button type="button" class="ghost log-open" id="open-add-log">記下一項學習或活動</button>
+          <button type="button" class="ghost log-open" id="open-add-log">記錄一項學習或活動</button>
         </div>
 
         <form class="box" id="add-log" hidden>
-          <h2>記下一項學習或活動</h2>
+          <h2>記錄一項學習或活動</h2>
           <div class="row two log-meta-row">
             <input id="log-date" type="text" inputmode="numeric" maxlength="10" required placeholder="yyyy-mm-dd" pattern="\d{4}-\d{2}-\d{2}" aria-label="日期" autocomplete="off">
             <select id="log-child" aria-label="小孩" required></select>
@@ -139,12 +139,13 @@
           <label class="field" for="log-note">詳情（選填，不公開）
             <textarea id="log-note" maxlength="2000" placeholder="例如：與妹妹一起看完；在圖書館借閱。"></textarea>
           </label>
-          <div class="actions"><button class="primary" type="submit">記下</button></div>
+          <div class="actions"><button class="primary" type="submit">記錄</button></div>
+          <p class="share-status" id="log-share-status" hidden></p>
         </form>
 
         <section class="share-week" aria-labelledby="share-week-title">
           <h2 id="share-week-title">最近 7 日家長分享</h2>
-          <p class="share-lead">+1 只記入這部瀏覽器的家裡紀錄，不會上傳。♡ 是公開的心意計數。</p>
+          <p class="share-lead">+1 加入你的孩子記錄；❤️以示支持！</p>
           <div id="share-list" aria-live="polite"></div>
         </section>
 
@@ -165,10 +166,11 @@
 
         <section class="box" aria-labelledby="backup-title">
           <h2 id="backup-title">備份</h2>
-          <p>匯出的 JSON 包括：小孩、學習日記、自行新增的資訊卡。不包括本頁內建的公開卡片。</p>
+          <p>匯出或匯入的 JSON 包括：小孩、學習日記、自行新增的資訊卡。不包括本頁內建的公開卡片。同步只在這個頁面開着時進行，關掉頁面就不會再上傳。</p>
           <div class="actions">
-            <button type="button" class="primary" id="export-btn">匯出 JSON</button>
-            <button type="button" class="ghost" id="import-btn">匯入 JSON</button>
+            <button type="button" class="ghost" id="export-btn">匯出</button>
+            <button type="button" class="ghost" id="import-btn">匯入</button>
+            <button type="button" class="primary" id="sync-open">同步</button>
           </div>
           <input id="import-file" class="hidden-file" type="file" accept="application/json,.json">
         </section>
@@ -178,7 +180,7 @@
     <footer class="site">
       <p>家裡學 HK 沒有追蹤、沒有帳戶。公開卡片的來源列於每張卡片下方，完整清單見 README。</p>
       <div class="credit-row">
-        <p class="credit">Created with ❤️ &amp; 🤖 by hk7math</p>
+        <p class="credit">Created with ❤️ &amp; 🤖 by Sheph</p>
         <button type="button" class="wish-open" id="wish-open">🙏 Wish</button>
       </div>
     </footer>
@@ -198,7 +200,21 @@
         </div>
       </form>
     </dialog>
+    <dialog id="sync-dialog" aria-labelledby="sync-title">
+      <h2 id="sync-title">同步</h2>
+      <p>同一位小孩的幾位家長可同時開着這個頁面，用同一個同步碼合併家裡紀錄。只有大家都在線時才會對上；關掉頁面後不會補傳。</p>
+      <label class="field" for="sync-code">同步碼
+        <input id="sync-code" class="sync-code" type="text" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="輸入或生成">
+      </label>
+      <div class="actions">
+        <button type="button" class="ghost" id="sync-generate">生成同步碼</button>
+        <button type="button" class="primary" id="sync-start">開始同步</button>
+        <button type="button" class="ghost" id="sync-stop" hidden>停止</button>
+        <button type="button" class="ghost" id="sync-close">關閉</button>
+      </div>
+      <p class="sync-status" id="sync-status" hidden></p>
+    </dialog>
   </div>
-  <script src="app.js?v=20261004-5"></script>
+  <script src="app.js?v=20261004-13"></script>
 </body>
 </html>
