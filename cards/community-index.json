@@ -1,19 +1,5 @@
 {
-  "files": [{
-  "id": "community-r7vpr2eg8pcq",
-  "title": "Teach Your Kid What School Doesn't - Alpha School",
-  "summary": "Part 1: Personalized Learning at Home\nPart 2: Applying Knowledge in the Real World\nPart 3: Life Skills at Home\nPart 4: How to Regulate Emotions at Home\nPart 5: Unleashing Their Creative Genius at Home",
-  "url": "https://futureofeducation.substack.com/p/teach-your-kid-what-school-doesnt",
-  "tags": [
-    "在家教育",
-    "AlphaSchool"
-  ],
-  "ages": [
-    "0–6",
-    "6–12",
-    "12–18",
-    ">18"
-  ],
-  "submittedAt": "2026-10-03"
-}]
+  "files": [
+    "cards/community-r7vpr2eg8pcq.json"
+  ]
 }
