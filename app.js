@@ -118,7 +118,6 @@
   ];
   var AGE_BANDS = ["0–6", "6–12", "12–18", ">18"];
   var GITHUB_REPO = "7album/homeschoolHK";
-  var GITHUB_BRANCH = "main";
 
   var seed = [];
   var communityCards = [];
@@ -733,72 +732,30 @@
     return { payload: payload, filePath: filePath, cardId: cardId };
   }
 
-  function githubNewFileUrl(filePath) {
-    return "https://github.com/" + GITHUB_REPO + "/new/" + GITHUB_BRANCH + "/" + filePath;
-  }
-
-  function githubEditIndexUrl() {
-    return "https://github.com/" + GITHUB_REPO + "/edit/" + GITHUB_BRANCH + "/cards/community-index.json";
-  }
-
-  function copyText(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      return navigator.clipboard.writeText(text);
-    }
-    return new Promise(function (resolve, reject) {
-      try {
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        ta.setAttribute("readonly", "");
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        var ok = document.execCommand("copy");
-        ta.remove();
-        if (ok) resolve();
-        else reject(new Error("copy failed"));
-      } catch (e) {
-        reject(e);
-      }
-    });
+  function githubNewIssueUrl(title, body) {
+    return "https://github.com/" + GITHUB_REPO + "/issues/new?title=" +
+      encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
   }
 
   function openCommunitySuggest() {
     var form = readSuggestForm();
     if (!form) return;
-    var jsonText = JSON.stringify(form.payload, null, 2) + "\n";
-    var indexLine = '    "' + form.filePath + '"';
-    var prBody = [
-      "## 社區資訊卡建議",
+    var jsonText = JSON.stringify(form.payload, null, 2);
+    var issueTitle = "社區資訊卡建議：" + form.payload.title;
+    var issueBody = [
+      "建議新增社區資訊卡。",
       "",
-      "請維護者合併前核對內容與來源。",
+      "建議檔案路徑：`" + form.filePath + "`",
       "",
-      "1. 新增檔案 `" + form.filePath + "`（內容見下方 JSON）。",
-      "2. 在 `cards/community-index.json` 的 `files` 陣列加入一行：",
       "```json",
-      indexLine,
-      "```",
-      "",
-      "### 卡片 JSON",
-      "```json",
-      jsonText.trim(),
+      jsonText,
       "```"
     ].join("\n");
     var hint = $("suggest-card-hint");
     hint.hidden = false;
-    window.open(githubNewFileUrl(form.filePath), "_blank", "noopener,noreferrer");
-    copyText(jsonText).then(function () {
-      hint.textContent = "已複製 JSON。請在 GitHub 編輯器貼上內容，提交到新分支後開立拉取請求；並在 cards/community-index.json 加入此檔路徑（見 README）。檔案：" + form.filePath;
-    }).catch(function () {
-      hint.textContent = "無法自動複製，請手動複製以下 JSON 後在 GitHub 貼上。檔案：" + form.filePath;
-      try {
-        window.prompt("請複製以下 JSON，再在 GitHub 編輯器貼上：", jsonText);
-      } catch (e) {}
-    });
-    try {
-      sessionStorage.setItem("homeschool-hk-last-suggest-pr-body", prBody);
-    } catch (e) {}
+    hint.textContent =
+      "已開啟 GitHub 新增議題頁面。請在該頁按「Submit new issue」提交；維護者加入清單後，卡片才會對所有訪客公開。";
+    window.open(githubNewIssueUrl(issueTitle, issueBody), "_blank", "noopener,noreferrer");
   }
 
   function loadCommunityCards(files) {

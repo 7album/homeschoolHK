@@ -62,7 +62,7 @@
 
         <form class="box" id="add-card">
           <h2>向社區清單建議一張資訊卡</h2>
-          <p>此表單<strong>不會</strong>把內容存進這部瀏覽器。按下按鈕後會開啟 GitHub 官方「新增檔案」頁面，請在該頁貼上已複製的 JSON、建立分支並開立拉取請求；維護者合併後，卡片才會出現在上方清單，<strong>對所有訪客公開</strong>。內建卡片不能在此修改。</p>
+          <p>此表單<strong>不會</strong>把內容存進這部瀏覽器。按下按鈕後會開啟 GitHub 官方「新增議題」頁面，標題與內文已填入卡片 JSON；你只需在 GitHub 按「Submit new issue」。維護者加入清單後，卡片才會出現在上方清單，<strong>對所有訪客公開</strong>。內建卡片不能在此修改。</p>
           <p class="intensity">家裡紀錄（小朋友與日常）仍只留在這部瀏覽器的 localStorage，與此建議無關。</p>
           <label class="field" for="card-title">標題
             <input id="card-title" name="title" type="text" maxlength="80" required>
@@ -86,7 +86,7 @@
             </div>
           </fieldset>
           <div class="actions">
-            <button class="primary" type="submit" id="suggest-card-btn">在 GitHub 開立拉取請求（JSON 已複製，請貼到編輯器）</button>
+            <button class="primary" type="submit" id="suggest-card-btn">在 GitHub 提交建議（開啟新增議題）</button>
           </div>
           <p class="intensity" id="suggest-card-hint" hidden></p>
         </form>
