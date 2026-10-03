@@ -191,8 +191,8 @@ textarea { min-height: 96px; resize: vertical; }
   font-size: 0.78rem;
   padding: 3px 8px;
   border-radius: 999px;
-  background: var(--sage-soft);
-  color: var(--sage);
+  background: #f6e7d4;
+  color: var(--warn);
 }
 .badge.mine { background: #f8e4c8; color: var(--warn); }
 .card p, .log p { margin: 0 0 0.7em; }
@@ -200,6 +200,33 @@ textarea { min-height: 96px; resize: vertical; }
 .sources li { margin: 0 0 8px; }
 .sources a { word-break: break-word; }
 .src-date { color: var(--muted); display: block; }
+
+.card-summary { cursor: pointer; }
+.card-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.card-title-row h2 { flex: 1; min-width: 0; margin: 0; }
+.card-fold .card-detail { margin-top: 10px; }
+button.vote-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+button.vote-btn .vote-arrow { font-weight: 650; }
+button.vote-btn[aria-pressed="true"] {
+  background: #f8e4e0;
+  border-color: #e7c2b6;
+  color: var(--accent-dark);
+}
 
 .row {
   display: grid;
@@ -352,8 +379,8 @@ footer.site ul { padding-left: 1.1em; }
   margin-bottom: 8px;
 }
 .tag.age {
-  background: #f6e7d4;
-  color: var(--warn);
+  background: var(--sage-soft);
+  color: var(--sage);
 }
 fieldset.ages {
   border: 1px solid var(--line);
@@ -637,7 +664,8 @@ button.wish-open {
   text-decoration: underline;
   cursor: pointer;
 }
-dialog#wish-dialog {
+dialog#wish-dialog,
+dialog#sync-dialog {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 16px;
@@ -646,7 +674,19 @@ dialog#wish-dialog {
   color: var(--ink);
   box-shadow: var(--shadow);
 }
-dialog#wish-dialog::backdrop { background: rgba(42, 36, 30, 0.45); }
-dialog#wish-dialog h2 { font-size: 1.15rem; margin: 0 0 10px; }
+dialog#wish-dialog::backdrop,
+dialog#sync-dialog::backdrop { background: rgba(42, 36, 30, 0.45); }
+dialog#wish-dialog h2,
+dialog#sync-dialog h2 { font-size: 1.15rem; margin: 0 0 10px; }
 .wish-status { margin: 8px 0 0; color: var(--sage); font-size: 0.9rem; }
 .wish-status.is-error { color: var(--accent-dark); }
+
+input.sync-code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  letter-spacing: 0.14em;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+}
+.sync-status { margin: 8px 0 0; color: var(--sage); font-size: 0.9rem; }
+.sync-status.is-error { color: var(--accent-dark); }
+dialog#sync-dialog p { margin: 0 0 10px; color: var(--muted); font-size: 0.92rem; }
