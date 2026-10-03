@@ -34,7 +34,7 @@
 
 私人資料的鍵名仍是 `homeschool-hk-private-v1`。開啟頁面不會清掉已儲存的小孩或紀錄。
 
-頁尾左側「Created with ❤️ & 🤖 by Sheph」連至本站的 [GitHub 儲存庫](https://github.com/7album/homeschoolHK)（新分頁開啟）；右側 **🙏 Wish** 可開啟意願表單。
+頁尾左側「Created with ❤️ & 🤖 by Sheph」連至本站的 [GitHub 儲存庫](https://github.com/7album/homeschoolHK)（新分頁開啟）；右側 **🙏 Wish** 會在新分頁開啟 GitHub「新增議題」頁面（標題預填為 Wish，內文可再編輯後提交）。
 
 ## 私隱界線
 
