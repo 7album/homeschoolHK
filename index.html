@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="供香港在家教育及幼兒家長使用：社區資訊已公開查證；小朋友的日常紀錄只留在這部瀏覽器。">
+  <meta name="description" content="供香港在家教育及幼兒家長使用：社區資訊已公開查證；家長學習日記只留在這部瀏覽器。">
   <title>家裡學 HK</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -22,7 +22,7 @@
           <p class="by">供香港在家教育及幼兒家長使用</p>
         </div>
       </div>
-      <p class="lede">兩個範圍，分開使用。上方是可以一併查閱的資料；下方是子女的日常紀錄，只儲存在目前使用的瀏覽器。</p>
+      <p class="lede">兩個範圍，分開使用。上方是可以一併查閱的資料；下方是子女的學習與活動日記，只儲存在目前使用的瀏覽器。</p>
     </header>
 
     <nav class="tabs" aria-label="兩個範圍">
@@ -63,7 +63,7 @@
         <form class="box" id="add-card">
           <h2>向社區清單建議一張資訊卡</h2>
           <p>此表單<strong>不會</strong>把內容存進這部瀏覽器。按下按鈕後會開啟 GitHub 官方「新增議題」頁面，標題與內文已填入卡片 JSON；你只需在 GitHub 按「Submit new issue」。維護者加入清單後，卡片才會出現在上方清單，<strong>對所有訪客公開</strong>。內建卡片不能在此修改。</p>
-          <p class="intensity">家裡紀錄（小朋友與日常）仍只留在這部瀏覽器的 localStorage，與此建議無關。</p>
+          <p class="intensity">家裡紀錄（學習日記）仍只留在這部瀏覽器的 localStorage，與此建議無關。</p>
           <label class="field" for="card-title">標題
             <input id="card-title" name="title" type="text" maxlength="80" required>
           </label>
@@ -95,7 +95,7 @@
       <section id="panel-private" role="tabpanel" aria-labelledby="tab-private" hidden>
         <div class="note private-note">
           <p><strong>這是家長日記，不是診斷，不是病歷，不是評估報告。</strong></p>
-          <p>小朋友與日常紀錄只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
+          <p>小朋友與學習日記只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳，亦不會與其他家庭分享。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
           <p>若對健康、聽覺或發展有疑慮，請向母嬰健康院、家庭醫生或兒科醫生查詢。本頁不能代替他們。</p>
         </div>
 
@@ -115,7 +115,7 @@
         </form>
 
         <form class="box" id="add-log">
-          <h2>記下一件日常</h2>
+          <h2>記下一項學習或活動</h2>
           <div class="row two">
             <label class="field" for="log-date">日期
               <input id="log-date" type="date" required>
@@ -125,38 +125,26 @@
             </label>
           </div>
           <div class="field">
-            <span class="chip-label" id="log-area-label">範圍</span>
-            <div id="log-area-pick" class="kind-row" role="group" aria-labelledby="log-area-label"></div>
-          </div>
-          <div class="field">
-            <span class="chip-label" id="log-kind-label">具體種類（必選一項）</span>
+            <span class="chip-label" id="log-kind-label">種類（必選一項）</span>
             <div id="log-kind-pick" class="kind-row" role="group" aria-labelledby="log-kind-label"></div>
             <input type="hidden" id="log-context" name="log-context" value="">
           </div>
-          <div class="row two">
-            <label class="field" for="log-intensity">程度（可留空）
-              <select id="log-intensity"></select>
-            </label>
-            <label class="field" for="log-mins">大約多少分鐘（可留空）
-              <input id="log-mins" type="number" min="1" max="999" inputmode="numeric" placeholder="可留空">
-            </label>
+          <label class="field" for="log-title">名稱（必填）
+            <input id="log-title" type="text" maxlength="120" required placeholder="例如：《好餓的毛毛蟲》、公園騎單車、紀錄片《地球脉動》">
+          </label>
+          <div class="field">
+            <span class="chip-label" id="log-age-label">小朋友當時的年齡段（必選）</span>
+            <div id="log-age-pick" class="kind-row" role="group" aria-labelledby="log-age-label"></div>
+            <input type="hidden" id="log-age-band" name="log-age-band" value="">
           </div>
-          <label class="field" for="log-note">短句
-            <textarea id="log-note" maxlength="2000" placeholder="例如：在公園追逐了一會，其後自己坐下看樹。"></textarea>
+          <label class="field" for="log-note">備註（可留空）
+            <textarea id="log-note" maxlength="2000" placeholder="例如：與妹妹一起看完；在圖書館借閱。"></textarea>
           </label>
           <div class="actions"><button class="primary" type="submit">記下</button></div>
         </form>
 
         <section class="box" aria-labelledby="summary-title">
-          <h2 id="summary-title">最近 14 日</h2>
-          <div class="row two">
-            <label class="field" for="summary-child">查看哪一位
-              <select id="summary-child"></select>
-            </label>
-            <label class="field" for="summary-area">查看哪一個範圍
-              <select id="summary-area"></select>
-            </label>
-          </div>
+          <h2 id="summary-title">最近 14 日 · 按年齡與種類</h2>
           <div id="summary"></div>
         </section>
 
@@ -165,7 +153,7 @@
           <label class="field" for="filter-child">小朋友
             <select id="filter-child"></select>
           </label>
-          <label class="field" for="filter-context">具體種類
+          <label class="field" for="filter-context">種類
             <select id="filter-context">
               <option value="all">全部</option>
             </select>
@@ -177,7 +165,7 @@
 
         <section class="box" aria-labelledby="backup-title">
           <h2 id="backup-title">備份</h2>
-          <p>匯出的 JSON 包括：小朋友、日常紀錄、自行新增的資訊卡。不包括本頁內建的公開卡片。</p>
+          <p>匯出的 JSON 包括：小朋友、學習日記、自行新增的資訊卡。不包括本頁內建的公開卡片。</p>
           <div class="actions">
             <button type="button" class="primary" id="export-btn">匯出 JSON</button>
             <button type="button" class="ghost" id="import-btn">匯入 JSON</button>

@@ -2,7 +2,17 @@
   "use strict";
 
   var KEY = "homeschool-hk-private-v1";
-  var DIARY_AREAS = [
+  var LEARNING_KINDS = [
+    { id: "learning-movie", label: "電影" },
+    { id: "learning-book", label: "書" },
+    { id: "learning-activity", label: "活動" },
+    { id: "learning-course", label: "課程" },
+    { id: "learning-music", label: "音樂" },
+    { id: "learning-outing", label: "參觀或外出" },
+    { id: "learning-media", label: "影音或網上學習" },
+    { id: "learning-other", label: "其他" }
+  ];
+  var LEGACY_DIARY_AREAS = [
     {
       id: "sleep",
       label: "睡眠",
@@ -94,6 +104,50 @@
     social: "social-family",
     other: "other-misc"
   };
+  var LEGACY_KIND_TO_LEARNING = {
+    "language-reading": "learning-book",
+    "play-free": "learning-activity",
+    "play-guided": "learning-activity",
+    "play-sensory": "learning-activity",
+    "play-pretend": "learning-activity",
+    "movement-gross": "learning-activity",
+    "movement-fine": "learning-activity",
+    "movement-outdoor": "learning-outing",
+    "movement-quiet": "learning-activity",
+    "social-family": "learning-activity",
+    "social-peer": "learning-activity",
+    "social-turn": "learning-activity",
+    "social-stranger": "learning-outing",
+    "language-receptive": "learning-course",
+    "language-expressive": "learning-course",
+    "language-gesture": "learning-course",
+    "sleep-onset": "learning-other",
+    "sleep-nightwake": "learning-other",
+    "sleep-nap": "learning-other",
+    "sleep-wake": "learning-other",
+    "eating-main": "learning-other",
+    "eating-snack": "learning-other",
+    "eating-milk": "learning-other",
+    "eating-refusal": "learning-other",
+    "eating-self": "learning-other",
+    "mood-calm": "learning-other",
+    "mood-distress": "learning-other",
+    "mood-tantrum": "learning-other",
+    "mood-soothe": "learning-other",
+    "other-selfcare": "learning-other",
+    "other-health": "learning-other",
+    "other-misc": "learning-other"
+  };
+  var LEGACY_TOP_TO_LEARNING = {
+    sleep: "learning-other",
+    eating: "learning-other",
+    mood: "learning-other",
+    language: "learning-course",
+    play: "learning-activity",
+    movement: "learning-activity",
+    social: "learning-activity",
+    other: "learning-other"
+  };
   var LEGACY_CONTEXT = {
     "瞓覺": "sleep",
     "食": "eating",
@@ -110,6 +164,7 @@
     "活動": "movement",
     "社交": "social"
   };
+  var SUMMARY_AGE_UNSET = "未標年齡";
   var INTENSITY = [
     { id: "", label: "可不填" },
     { id: "light", label: "輕微" },
@@ -127,10 +182,8 @@
   var logChild = "all";
   var logContext = "all";
   var logLimit = 20;
-  var summaryChild = "";
-  var summaryArea = "sleep";
-  var logPickArea = "sleep";
   var logPickKind = "";
+  var logPickAge = "";
 
   function $(id) { return document.getElementById(id); }
 
@@ -156,30 +209,63 @@
     };
   }
 
-  function diaryKindById(kindId) {
-    for (var a = 0; a < DIARY_AREAS.length; a++) {
-      var kinds = DIARY_AREAS[a].kinds;
+  function learningKindById(kindId) {
+    for (var i = 0; i < LEARNING_KINDS.length; i++) {
+      if (LEARNING_KINDS[i].id === kindId) return LEARNING_KINDS[i];
+    }
+    return null;
+  }
+
+  function legacyDiaryKindById(kindId) {
+    for (var a = 0; a < LEGACY_DIARY_AREAS.length; a++) {
+      var kinds = LEGACY_DIARY_AREAS[a].kinds;
       for (var k = 0; k < kinds.length; k++) {
-        if (kinds[k].id === kindId) return { area: DIARY_AREAS[a], kind: kinds[k] };
+        if (kinds[k].id === kindId) return { area: LEGACY_DIARY_AREAS[a], kind: kinds[k] };
       }
     }
     return null;
   }
 
-  function diaryAreaById(areaId) {
-    for (var i = 0; i < DIARY_AREAS.length; i++) {
-      if (DIARY_AREAS[i].id === areaId) return DIARY_AREAS[i];
+  function legacyContextLabel(raw) {
+    var v = raw == null ? "" : String(raw).trim();
+    if (!v) return "";
+    var hit = legacyDiaryKindById(v);
+    if (hit) return hit.area.label + " · " + hit.kind.label;
+    var top = LEGACY_CONTEXT[v] || (LEGACY_TOP_TO_KIND[v] ? v : "");
+    if (top) {
+      for (var i = 0; i < LEGACY_DIARY_AREAS.length; i++) {
+        if (LEGACY_DIARY_AREAS[i].id === top) return LEGACY_DIARY_AREAS[i].label;
+      }
     }
-    return null;
+    return v;
+  }
+
+  function normalizeLegacyKindId(value) {
+    var v = value == null ? "" : String(value).trim();
+    if (!v) return "";
+    if (legacyDiaryKindById(v)) return v;
+    var top = LEGACY_CONTEXT[v] || (LEGACY_TOP_TO_KIND[v] ? v : "");
+    if (top && LEGACY_TOP_TO_KIND[top]) return LEGACY_TOP_TO_KIND[top];
+    return "";
   }
 
   function normalizeContext(value) {
     var v = value == null ? "" : String(value).trim();
-    if (!v) return "other-misc";
-    if (diaryKindById(v)) return v;
+    if (!v) return "learning-other";
+    if (learningKindById(v)) return v;
+    var legacyKind = normalizeLegacyKindId(v);
+    if (legacyKind && LEGACY_KIND_TO_LEARNING[legacyKind]) return LEGACY_KIND_TO_LEARNING[legacyKind];
     var top = LEGACY_CONTEXT[v] || (LEGACY_TOP_TO_KIND[v] ? v : "");
-    if (top && LEGACY_TOP_TO_KIND[top]) return LEGACY_TOP_TO_KIND[top];
-    return "other-misc";
+    if (top && LEGACY_TOP_TO_LEARNING[top]) return LEGACY_TOP_TO_LEARNING[top];
+    return "learning-other";
+  }
+
+  function normalizeAgeBand(value) {
+    var v = value == null ? "" : String(value).trim().replace(/-/g, "–").replace(/－/g, "–");
+    if (AGE_BANDS.indexOf(v) !== -1) return v;
+    var mapped = legacyAges(v);
+    if (mapped.length === 1) return mapped[0];
+    return "";
   }
 
   function load() {
@@ -192,7 +278,14 @@
       data.logs = Array.isArray(data.logs) ? data.logs.map(function (log) {
         var copy = {};
         for (var k in log) if (Object.prototype.hasOwnProperty.call(log, k)) copy[k] = log[k];
-        copy.context = normalizeContext(log.context);
+        var rawContext = log.context;
+        copy.context = normalizeContext(rawContext);
+        copy.title = String(copy.title || "").trim().slice(0, 120);
+        if (!copy.title) {
+          var legacyTitle = legacyContextLabel(rawContext);
+          if (legacyTitle) copy.title = legacyTitle.slice(0, 120);
+        }
+        copy.ageBand = normalizeAgeBand(copy.ageBand);
         return copy;
       }) : [];
       data.personalCards = Array.isArray(data.personalCards) ? data.personalCards.map(function (card) {
@@ -235,15 +328,15 @@
 
   function contextLabel(id) {
     var normalized = normalizeContext(id);
-    var hit = diaryKindById(normalized);
-    if (hit) return hit.kind.label;
+    var hit = learningKindById(normalized);
+    if (hit) return hit.label;
     return String(id == null ? "" : id);
   }
 
-  function contextAreaLabel(id) {
-    var normalized = normalizeContext(id);
-    var hit = diaryKindById(normalized);
-    return hit ? hit.area.label : "";
+  function logHeadline(log) {
+    var title = String(log.title || "").trim();
+    if (title) return title;
+    return contextLabel(log.context);
   }
 
   function intensityLabel(id) {
@@ -468,12 +561,6 @@
     var kids = state.children.map(function (c) { return { id: c.id, name: c.name }; });
     fillSelect($("log-child"), kids, null);
     fillSelect($("filter-child"), kids, { value: "all", label: "全部小朋友" });
-    fillSelect($("summary-child"), kids, null);
-    if (summaryChild && childById(summaryChild)) $("summary-child").value = summaryChild;
-    else if (state.children[0]) {
-      summaryChild = state.children[0].id;
-      $("summary-child").value = summaryChild;
-    }
     if (logChild !== "all" && childById(logChild)) $("filter-child").value = logChild;
     else logChild = "all";
   }
@@ -492,7 +579,6 @@
       }).join("");
     }
     refreshChildSelects();
-    fillSummaryAreaSelect();
     renderSummary();
     renderLogs();
   }
@@ -509,21 +595,20 @@
     $("log-count").textContent = String(rows.length);
     var shown = rows.slice(0, logLimit);
     if (!shown.length) {
-      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。記下一件今日的小事即可，例如進食分量、在何處玩耍、有沒有看着你說一句話。</p>";
+      $("log-list").innerHTML = "<p class='empty'>未有符合的紀錄。記下一部電影、一本書或一項活動，並標示當時的年齡段，方便日後對照同齡時看過、讀過、做過什麼。</p>";
     } else {
       $("log-list").innerHTML = shown.map(function (log) {
         var child = childById(log.childId);
         var extra = [];
+        extra.push(contextLabel(log.context));
+        if (log.ageBand) extra.push(log.ageBand);
         if (log.intensity) extra.push(intensityLabel(log.intensity));
         if (log.durationMin) extra.push(String(log.durationMin) + " 分鐘");
-        var areaLbl = contextAreaLabel(log.context);
-        var kindLbl = contextLabel(log.context);
-        var title = areaLbl ? areaLbl + " · " + kindLbl : kindLbl;
         return "<article class='log'>" +
-          "<div class='log-head'><h3>" + esc(child ? child.name : "（已移除的小朋友）") + " · " + esc(title) + "</h3>" +
+          "<div class='log-head'><h3>" + esc(child ? child.name : "（已移除的小朋友）") + " · " + esc(logHeadline(log)) + "</h3>" +
           "<time datetime='" + esc(log.date) + "'>" + esc(log.date) + "</time></div>" +
           (extra.length ? "<p class='intensity'>" + esc(extra.join(" · ")) + "</p>" : "") +
-          "<p>" + esc(log.note || "") + "</p>" +
+          (log.note ? "<p>" + esc(log.note) + "</p>" : "") +
           "<div class='actions'><button type='button' class='danger' data-del-log='" + esc(log.id) + "'>刪除這則</button></div>" +
           "</article>";
       }).join("");
@@ -531,95 +616,99 @@
     $("more-logs").hidden = rows.length <= logLimit;
   }
 
-  function renderSummary() {
-    var host = $("summary");
-    var child = childById($("summary-child").value || summaryChild);
-    if (!child) {
-      host.innerHTML = "<p class='empty'>新增一位小朋友之後，這裡會顯示最近14日、在所選範圍內各種具體日常有多少則紀錄。這些數字只是記下的次數，不是發展評估。</p>";
-      return;
-    }
-    summaryChild = child.id;
+  function summaryWindow() {
     var end = todayISO();
     var startDate = new Date(end + "T12:00:00");
     startDate.setDate(startDate.getDate() - 13);
     var localStart = new Date(startDate.getTime() - startDate.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    var area = diaryAreaById(summaryArea) || DIARY_AREAS[0];
-    summaryArea = area.id;
-    var counts = {};
-    area.kinds.forEach(function (k) { counts[k.id] = 0; });
-    state.logs.forEach(function (log) {
-      if (log.childId !== child.id) return;
-      if (log.date < localStart || log.date > end) return;
-      var ctx = normalizeContext(log.context);
-      if (counts[ctx] == null) return;
-      counts[ctx] += 1;
+    return { start: localStart, end: end };
+  }
+
+  function renderSummary() {
+    var host = $("summary");
+    if (!state.children.length) {
+      host.innerHTML = "<p class='empty'>新增一位小朋友之後，這裡會按年齡段與種類列出最近 14 日記下的電影、書籍與活動名稱，方便對照「這個年紀常看什麼、讀什麼、做什麼」。資料只在本機，不會上傳或與他人分享。</p>";
+      return;
+    }
+    var win = summaryWindow();
+    var recent = state.logs.filter(function (log) {
+      return log.date >= win.start && log.date <= win.end;
+    }).sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return String(a.id) < String(b.id) ? 1 : -1;
     });
-    var max = 1;
-    area.kinds.forEach(function (k) { if (counts[k.id] > max) max = counts[k.id]; });
-    host.innerHTML = "<p><strong>" + esc(child.name) + "</strong> · " + esc(localStart) + " 至 " + esc(end) + " · " + esc(area.label) + "</p>" +
-      "<p class='intensity'>同一範圍內各種具體種類的則數，方便對照；不是分數，亦不是與其他小朋友比較。</p>" +
-      area.kinds.map(function (k) {
-        var n = counts[k.id] || 0;
-        var w = Math.round((n / max) * 100);
-        return "<div class='bar-row'><span class='bar-label'>" + esc(k.label) + "</span>" +
-          "<span class='bar-track'><span class='bar-fill' style='width:" + w + "%'></span></span>" +
-          "<span class='bar-count'>" + n + "</span></div>";
-      }).join("");
+    if (!recent.length) {
+      host.innerHTML = "<p class='empty'>" + esc(win.start) + " 至 " + esc(win.end) + " 尚未有學習紀錄。記下一部電影、一本書或一項活動即可。</p>";
+      return;
+    }
+    var bands = AGE_BANDS.concat([SUMMARY_AGE_UNSET]);
+    var grouped = {};
+    bands.forEach(function (band) { grouped[band] = {}; });
+    recent.forEach(function (log) {
+      var band = log.ageBand && AGE_BANDS.indexOf(log.ageBand) !== -1 ? log.ageBand : SUMMARY_AGE_UNSET;
+      var kind = normalizeContext(log.context);
+      if (!grouped[band][kind]) grouped[band][kind] = [];
+      grouped[band][kind].push(log);
+    });
+    var html = "<p><strong>最近 14 日</strong> · " + esc(win.start) + " 至 " + esc(win.end) + "</p>" +
+      "<p class='intensity'>按小朋友當時標示的年齡段與種類列出名稱，方便回想同齡時的觀看、閱讀與活動；不是評估分數，亦不會與其他家庭比較。</p>";
+    bands.forEach(function (band) {
+      var kinds = grouped[band];
+      var kindIds = LEARNING_KINDS.map(function (k) { return k.id; }).filter(function (id) {
+        return kinds[id] && kinds[id].length;
+      });
+      if (!kindIds.length) return;
+      html += "<section class='learning-band'><h3 class='learning-band-title'>" + esc(band) + "</h3>";
+      kindIds.forEach(function (kindId) {
+        var kind = learningKindById(kindId);
+        html += "<div class='learning-kind-block'><h4>" + esc(kind ? kind.label : kindId) + "</h4><ul class='learning-title-list'>";
+        kinds[kindId].forEach(function (log) {
+          var child = childById(log.childId);
+          var meta = [];
+          if (child) meta.push(child.name);
+          meta.push(log.date);
+          html += "<li><span class='learning-item-title'>" + esc(logHeadline(log)) + "</span>" +
+            "<span class='learning-item-meta'>" + esc(meta.join(" · ")) + "</span></li>";
+        });
+        html += "</ul></div>";
+      });
+      html += "</section>";
+    });
+    host.innerHTML = html;
   }
 
   function renderLogKindPicker() {
-    var areaHost = $("log-area-pick");
     var kindHost = $("log-kind-pick");
-    if (!areaHost || !kindHost) return;
-    areaHost.innerHTML = DIARY_AREAS.map(function (a) {
-      var pressed = a.id === logPickArea ? "true" : "false";
-      return "<button type='button' class='kind-chip' data-log-area='" + esc(a.id) + "' aria-pressed='" + pressed + "'>" + esc(a.label) + "</button>";
-    }).join("");
-    var area = diaryAreaById(logPickArea) || DIARY_AREAS[0];
-    logPickArea = area.id;
-    if (!area.kinds.some(function (k) { return k.id === logPickKind; })) logPickKind = "";
-    kindHost.innerHTML = area.kinds.map(function (k) {
+    if (!kindHost) return;
+    if (!LEARNING_KINDS.some(function (k) { return k.id === logPickKind; })) logPickKind = "";
+    kindHost.innerHTML = LEARNING_KINDS.map(function (k) {
       var pressed = k.id === logPickKind ? "true" : "false";
       return "<button type='button' class='kind-chip' data-log-kind='" + esc(k.id) + "' aria-pressed='" + pressed + "'>" + esc(k.label) + "</button>";
     }).join("");
     $("log-context").value = logPickKind;
+    var ageHost = $("log-age-pick");
+    if (ageHost) {
+      ageHost.innerHTML = AGE_BANDS.map(function (band) {
+        var pressed = band === logPickAge ? "true" : "false";
+        return "<button type='button' class='kind-chip' data-log-age='" + esc(band) + "' aria-pressed='" + pressed + "'>" + esc(band) + "</button>";
+      }).join("");
+      $("log-age-band").value = logPickAge;
+    }
   }
 
   function fillContextFilter() {
     var select = $("filter-context");
     var current = select.value;
-    select.innerHTML = "<option value='all'>全部</option>";
-    DIARY_AREAS.forEach(function (area) {
-      var group = document.createElement("optgroup");
-      group.label = area.label;
-      area.kinds.forEach(function (k) {
-        var o = document.createElement("option");
-        o.value = k.id;
-        o.textContent = k.label;
-        group.appendChild(o);
-      });
-      select.appendChild(group);
+    select.innerHTML = "<option value='all'>全部種類</option>";
+    LEARNING_KINDS.forEach(function (k) {
+      var o = document.createElement("option");
+      o.value = k.id;
+      o.textContent = k.label;
+      select.appendChild(o);
     });
     if (current && select.querySelector("option[value='" + CSS.escape(current) + "']")) {
       select.value = current;
     }
-  }
-
-  function fillSummaryAreaSelect() {
-    var select = $("summary-area");
-    if (!select) return;
-    var current = select.value;
-    select.innerHTML = "";
-    DIARY_AREAS.forEach(function (a) {
-      var o = document.createElement("option");
-      o.value = a.id;
-      o.textContent = a.label;
-      select.appendChild(o);
-    });
-    if (current && diaryAreaById(current)) select.value = current;
-    else if (diaryAreaById(summaryArea)) select.value = summaryArea;
-    else select.value = DIARY_AREAS[0].id;
-    summaryArea = select.value;
   }
 
   function exportData() {
@@ -665,8 +754,14 @@
   }
 
   function cleanLog(l) {
-    var ctx = normalizeContext(l.context);
-    if (!diaryKindById(ctx)) ctx = "other-misc";
+    var rawContext = l.context;
+    var ctx = normalizeContext(rawContext);
+    if (!learningKindById(ctx)) ctx = "learning-other";
+    var title = String(l.title || "").trim().slice(0, 120);
+    if (!title) {
+      var legacyTitle = legacyContextLabel(rawContext);
+      if (legacyTitle) title = legacyTitle.slice(0, 120);
+    }
     var intensity = (l.intensity === "light" || l.intensity === "usual" || l.intensity === "strong") ? l.intensity : "";
     var mins = parseInt(l.durationMin, 10);
     return {
@@ -674,6 +769,8 @@
       childId: String(l.childId || ""),
       date: /^\d{4}-\d{2}-\d{2}$/.test(l.date) ? l.date : todayISO(),
       context: ctx,
+      title: title,
+      ageBand: normalizeAgeBand(l.ageBand),
       note: String(l.note || "").slice(0, 2000),
       intensity: intensity,
       durationMin: (mins > 0 && mins < 10000) ? mins : ""
@@ -849,26 +946,18 @@
 
     renderLogKindPicker();
     fillContextFilter();
-    fillSummaryAreaSelect();
-    INTENSITY.forEach(function (item) {
-      var o = document.createElement("option");
-      o.value = item.id;
-      o.textContent = item.label;
-      $("log-intensity").appendChild(o);
-    });
     $("log-date").value = todayISO();
 
-    $("log-area-pick").addEventListener("click", function (ev) {
-      var btn = ev.target.closest("[data-log-area]");
-      if (!btn) return;
-      logPickArea = btn.getAttribute("data-log-area");
-      logPickKind = "";
-      renderLogKindPicker();
-    });
     $("log-kind-pick").addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-log-kind]");
       if (!btn) return;
       logPickKind = btn.getAttribute("data-log-kind");
+      renderLogKindPicker();
+    });
+    $("log-age-pick").addEventListener("click", function (ev) {
+      var btn = ev.target.closest("[data-log-age]");
+      if (!btn) return;
+      logPickAge = btn.getAttribute("data-log-age");
       renderLogKindPicker();
     });
 
@@ -876,24 +965,32 @@
       ev.preventDefault();
       if (!state.children.length) return;
       var kind = normalizeContext($("log-context").value);
-      if (!diaryKindById(kind)) {
-        alert("請先點選一種具體日常種類。");
+      if (!learningKindById(kind)) {
+        alert("請先點選一種學習種類（例如電影、書或活動）。");
         return;
       }
-      var mins = parseInt($("log-mins").value, 10);
+      var title = $("log-title").value.trim().slice(0, 120);
+      if (!title) {
+        alert("請填寫名稱（例如電影、書或活動的標題）。");
+        return;
+      }
+      var ageBand = normalizeAgeBand($("log-age-band").value || logPickAge);
+      if (!ageBand) {
+        alert("請點選小朋友當時的年齡段（0–6、6–12、12–18 或 >18）。");
+        return;
+      }
       state.logs.push({
         id: uid(),
         childId: $("log-child").value,
         date: $("log-date").value || todayISO(),
         context: kind,
-        note: $("log-note").value.trim().slice(0, 2000),
-        intensity: $("log-intensity").value,
-        durationMin: (mins > 0 && mins < 10000) ? mins : ""
+        title: title,
+        ageBand: ageBand,
+        note: $("log-note").value.trim().slice(0, 2000)
       });
       save();
+      $("log-title").value = "";
       $("log-note").value = "";
-      $("log-mins").value = "";
-      $("log-intensity").value = "";
       renderLogs();
       renderSummary();
     });
@@ -905,14 +1002,6 @@
     $("filter-context").addEventListener("change", function () {
       logContext = $("filter-context").value;
       renderLogs();
-    });
-    $("summary-child").addEventListener("change", function () {
-      summaryChild = $("summary-child").value;
-      renderSummary();
-    });
-    $("summary-area").addEventListener("change", function () {
-      summaryArea = $("summary-area").value;
-      renderSummary();
     });
     $("more-logs").addEventListener("click", function () {
       logLimit += 20;

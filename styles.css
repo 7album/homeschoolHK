@@ -289,6 +289,32 @@ body.mode-private .kind-chip[aria-pressed="true"] {
 }
 .bar-count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
 
+.learning-band { margin-top: 1.1rem; }
+.learning-band-title {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.learning-kind-block { margin: 0.65rem 0 0.35rem 0.35rem; }
+.learning-kind-block h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.learning-title-list {
+  margin: 0;
+  padding-left: 1.15em;
+  list-style: disc;
+}
+.learning-title-list li { margin: 0.35rem 0; }
+.learning-item-title { display: block; font-weight: 600; }
+.learning-item-meta {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
 .log-head {
   display: flex;
   justify-content: space-between;
