@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="供香港在家教育及幼兒家長使用：社區資訊已公開查證；家長學習日記只留在這部瀏覽器。">
   <title>家裡學 HK</title>
-  <link rel="stylesheet" href="styles.css?v=20261003-4">
+  <link rel="stylesheet" href="styles.css?v=20261004-5">
 </head>
-<body>
+<body class="mode-private">
   <a class="skip" href="#main">跳到內容</a>
   <div class="wrap">
     <header class="site">
@@ -22,22 +22,21 @@
           <p class="by">供香港在家教育及幼兒家長使用</p>
         </div>
       </div>
-      <p class="lede">兩個範圍，分開使用。上方是可以一併查閱的資料；下方是子女的學習與活動日記，只儲存在目前使用的瀏覽器。</p>
     </header>
 
     <nav class="tabs" aria-label="兩個範圍">
-      <button type="button" id="tab-public" role="tab" aria-selected="true" aria-controls="panel-public">
-        社區資訊
-        <small>公開、有來源</small>
-      </button>
-      <button type="button" id="tab-private" role="tab" aria-selected="false" aria-controls="panel-private">
+      <button type="button" id="tab-private" role="tab" aria-selected="true" aria-controls="panel-private">
         家裡紀錄
         <small>只在這部裝置</small>
+      </button>
+      <button type="button" id="tab-public" role="tab" aria-selected="false" aria-controls="panel-public">
+        社區資訊
+        <small>公開、有來源</small>
       </button>
     </nav>
 
     <main id="main">
-      <section id="panel-public" role="tabpanel" aria-labelledby="tab-public">
+      <section id="panel-public" role="tabpanel" aria-labelledby="tab-public" hidden>
         <div class="note">
           <p><strong>此頁資訊由 AI 整理，更新日期是 2026-10-03。</strong>未能查證的內容並未寫入，包括一套「在家教育登記」的逐步程序。</p>
           <p>本頁不是教育局網站，亦不是法律意見。政策可能更改，請再打開卡片上的連結核對。</p>
@@ -92,22 +91,31 @@
         </form>
       </section>
 
-      <section id="panel-private" role="tabpanel" aria-labelledby="tab-private" hidden>
+      <section id="panel-private" role="tabpanel" aria-labelledby="tab-private">
         <div class="private-head">
           <h2 class="private-title">家裡紀錄</h2>
-          <button type="button" class="icon-add" id="add-child-head" aria-label="新增一位小朋友" title="新增小朋友">+</button>
+          <div class="private-head-actions">
+            <button type="button" class="icon-info" id="private-info" aria-expanded="false" aria-controls="private-note" aria-label="說明">i</button>
+            <button type="button" class="icon-person" id="child-toggle" aria-expanded="false" aria-controls="child-settings" aria-label="小孩設定">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="currentColor"/><path d="M5.5 19.2c1.2-3.2 3.4-4.7 6.5-4.7s5.3 1.5 6.5 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span id="selected-child-name">小孩</span>
+            </button>
+            <button type="button" class="icon-add" id="add-child-head" aria-label="記下一項學習或活動" title="記下一項學習或活動">+</button>
+          </div>
         </div>
 
-        <div class="note private-note">
+        <div class="note private-note" id="private-note" hidden>
           <p><strong>這是家長日記，不是診斷，不是病歷，不是評估報告。</strong></p>
-          <p>小朋友與學習日記只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳，亦不會與其他家庭分享。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
+          <p>小孩與學習日記只存在這個瀏覽器的 localStorage。沒有帳戶，不會上傳，亦不會與其他家庭分享。清除網站資料、更換瀏覽器或更換電話後，紀錄便會消失。如需保留，請使用下方的匯出。社區資訊卡的建議請用上方表單經 GitHub 提出，不會寫入此處。</p>
           <p>若對健康、聽覺或發展有疑慮，請向母嬰健康院、家庭醫生或兒科醫生查詢。本頁不能代替他們。</p>
         </div>
 
-        <p class="chip-label" id="child-settings-label">小朋友</p>
-        <div id="child-list" class="child-rows" aria-labelledby="child-settings-label"></div>
-        <div class="child-add-wrap">
-          <button type="button" class="ghost child-add" id="add-child-btn">+ 小朋友</button>
+        <div id="child-settings" hidden>
+          <p class="chip-label" id="child-settings-label">小孩</p>
+          <div id="child-list" class="child-rows" aria-labelledby="child-settings-label"></div>
+          <div class="child-add-wrap">
+            <button type="button" class="ghost child-add" id="add-child-btn">+ 小孩</button>
+          </div>
         </div>
 
         <div class="log-open-wrap">
@@ -116,36 +124,33 @@
 
         <form class="box" id="add-log" hidden>
           <h2>記下一項學習或活動</h2>
-          <div class="row two">
-            <label class="field" for="log-date">日期
-              <input id="log-date" type="date" required>
-            </label>
-            <label class="field" for="log-child">小朋友
-              <select id="log-child" required></select>
-            </label>
+          <div class="row two log-meta-row">
+            <input id="log-date" type="text" inputmode="numeric" maxlength="10" required placeholder="yyyy-mm-dd" pattern="\d{4}-\d{2}-\d{2}" aria-label="日期" autocomplete="off">
+            <select id="log-child" aria-label="小孩" required></select>
           </div>
-          <div class="field">
+          <div class="field" id="log-kind-field">
             <span class="chip-label" id="log-kind-label">種類（必選一項）</span>
             <div id="log-kind-pick" class="kind-row" role="group" aria-labelledby="log-kind-label"></div>
             <input type="hidden" id="log-context" name="log-context" value="">
           </div>
-          <label class="field" for="log-title">名稱（必填）
-            <input id="log-title" type="text" maxlength="120" required placeholder="例如：《好餓的毛毛蟲》、公園騎單車、紀錄片《地球脉動》">
+          <label class="field" for="log-title">項目（必填，公開）
+            <input id="log-title" type="text" maxlength="120" required placeholder="例如：《好餓的毛毛蟲》、公園騎單車、紀錄片">
           </label>
-          <label class="field" for="log-note">備註（可留空）
+          <label class="field" for="log-note">詳情（選填，不公開）
             <textarea id="log-note" maxlength="2000" placeholder="例如：與妹妹一起看完；在圖書館借閱。"></textarea>
           </label>
           <div class="actions"><button class="primary" type="submit">記下</button></div>
         </form>
 
-        <section class="box" aria-labelledby="summary-title">
-          <h2 id="summary-title">最近 14 日 · 按年齡與種類</h2>
-          <div id="summary"></div>
+        <section class="share-week" aria-labelledby="share-week-title">
+          <h2 id="share-week-title">最近 7 日家長分享</h2>
+          <p class="share-lead">+1 只記入這部瀏覽器的家裡紀錄，不會上傳。♡ 是公開的心意計數。</p>
+          <div id="share-list" aria-live="polite"></div>
         </section>
 
         <h2>近期紀錄</h2>
         <div class="row two">
-          <label class="field" for="filter-child">小朋友
+          <label class="field" for="filter-child">小孩
             <select id="filter-child"></select>
           </label>
           <label class="field" for="filter-context">種類
@@ -160,7 +165,7 @@
 
         <section class="box" aria-labelledby="backup-title">
           <h2 id="backup-title">備份</h2>
-          <p>匯出的 JSON 包括：小朋友、學習日記、自行新增的資訊卡。不包括本頁內建的公開卡片。</p>
+          <p>匯出的 JSON 包括：小孩、學習日記、自行新增的資訊卡。不包括本頁內建的公開卡片。</p>
           <div class="actions">
             <button type="button" class="primary" id="export-btn">匯出 JSON</button>
             <button type="button" class="ghost" id="import-btn">匯入 JSON</button>
@@ -172,9 +177,28 @@
 
     <footer class="site">
       <p>家裡學 HK 沒有追蹤、沒有帳戶。公開卡片的來源列於每張卡片下方，完整清單見 README。</p>
-      <p class="credit">Created with ❤️ &amp; 🤖 by hk7math</p>
+      <div class="credit-row">
+        <p class="credit">Created with ❤️ &amp; 🤖 by hk7math</p>
+        <button type="button" class="wish-open" id="wish-open">🙏 Wish</button>
+      </div>
     </footer>
+    <dialog id="wish-dialog" aria-labelledby="wish-title">
+      <form id="wish-form">
+        <h2 id="wish-title">Make a Wish</h2>
+        <label class="field" for="wish-message">想說的話（必填）
+          <textarea id="wish-message" maxlength="500" required></textarea>
+        </label>
+        <label class="field" for="wish-contact">聯絡（可留空）
+          <input id="wish-contact" type="text" maxlength="120" autocomplete="off">
+        </label>
+        <p class="wish-status" id="wish-status" hidden></p>
+        <div class="actions">
+          <button class="primary" type="submit" id="wish-send">送出</button>
+          <button class="ghost" type="button" id="wish-cancel">取消</button>
+        </div>
+      </form>
+    </dialog>
   </div>
-  <script src="app.js?v=20261003-4"></script>
+  <script src="app.js?v=20261004-5"></script>
 </body>
 </html>
